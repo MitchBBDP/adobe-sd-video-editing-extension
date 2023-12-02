@@ -1,61 +1,82 @@
-const tandemName = document.getElementById("tandemName");
-const newProjButton = document.getElementById("newProj");
-const handicamButton = document.getElementById("insertHC");
-const boardCheck = document.getElementById('hasBoard');
-const scriptPath = "/jsx/tes.jsx";;
-let targetFunction;
+const main = {
+	tandemNameInput: document.getElementById("tandemName"),
+	newProjButton: document.getElementById("newProj"),
+	handicamButton: document.getElementById("insertHC"),
+	boardCheck: document.getElementById('hasBoard'),
+	scriptPath: "/jsx/tes.jsx",
+	targetFunction: null,
 
-newProjButton.addEventListener("click", function () {
-	//Sets the target function
-	targetFunction = "createNewProject";
+	//General function for running and communicating with jsx files
+	runJsxFile(targetFunction, param1 = null, param2 = null, param3 = null) {
+		const csInterface = new CSInterface();
+		const jsxPath = csInterface.getSystemPath(SystemPath.EXTENSION) + this.scriptPath;
+		console.log(param2);
+		csInterface.evalScript(`$.evalFile("${jsxPath}"); ${targetFunction}("${param1}", "${param2}", ${param3})`, function (result) {
+			console.log(result);
+		});
+	},
 
-	//Creates a validation for the user input
-	const numOfWords = tandemName.value.split(" ");
-	const startsWithSpace = tandemName.value.startsWith(" ");
-	const endsWithSpace = tandemName.value.endsWith(" ");
-	const hasTwoConsecutiveSpaces = tandemName.value.includes("  ");
+	createNewProject() {
+		if (this.validateTandemName()) {
+			const newTandemName = this.tandemNameInput.value;
+			const hasBoard = this.boardCheck.checked;
+			const date = new Date();
+			const day = date.getDate();
+			const month = date.toLocaleDateString('en-GB', { month: 'long' });
+			const year = date.getFullYear();
+			const currentDate = `${day} ${month} ${year}`;
 
-	if (tandemName.value && numOfWords.length > 2 && !startsWithSpace
-		&& !endsWithSpace && !hasTwoConsecutiveSpaces) {
-		
-		//Get the tandem name and has board value
-		const newTandemName = tandemName.value;
-		const hasBoard = boardCheck.checked;
+			this.runJsxFile("createNewProject", newTandemName, currentDate, hasBoard);
 
-		//Get the current date
-		const date = new Date();
-		const day = date.getDate();
-		const month = date.toLocaleDateString('en-GB', { month: 'long' });
-		const year = date.getFullYear();
-		const currentDate = `${day} ${month} ${year}`;
+			this.resetUIInputs();
+		}
+	},
 
-		runJsxFile(targetFunction, scriptPath, newTandemName, currentDate, hasBoard);
+	insertHandicam() {
+		this.runJsxFile("insertHandicam");
+	},
 
-		//Resets the UI input
-		tandemName.value = "";
-		boardCheck.checked = true;
+	//Clears the input field and checkbox
+	resetUIInputs() {
+		this.tandemNameInput.value = "";
+		this.boardCheck.checked = true;
+	},
 
+	//Validate user input for the tandem name to avoid errors
+	//****Must have more than three words
+	//****Cannot start or ends with a space
+	//****Cannot contain consecutive spaces
+	validateTandemName() {
+		const { tandemNameInput, boardCheck } = this;
+		const numOfWords = tandemNameInput.value.split(" ");
+		const startsWithSpace = tandemNameInput.value.startsWith(" ");
+		const endsWithSpace = tandemNameInput.value.endsWith(" ");
+		const hasTwoConsecutiveSpaces = tandemNameInput.value.includes("  ");
+
+		return (
+			tandemNameInput.value &&
+			numOfWords.length > 2 &&
+			!startsWithSpace &&
+			!endsWithSpace &&
+			!hasTwoConsecutiveSpaces
+		);
+	},
+
+	init() {
+		this.newProjButton.addEventListener("click", () => {
+			this.targetFunction = "createNewProject";
+			this.createNewProject();
+		});
+
+		this.handicamButton.addEventListener("click", () => {
+			this.targetFunction = "insertHandicam";
+			this.insertHandicam();
+		});
 	}
-})
-
-function runJsxFile(targetFunction, scriptPath, param1, param2, param3) {
-	const csInterface = new CSInterface();
-	const jsxPath = csInterface.getSystemPath(SystemPath.EXTENSION) + scriptPath;
-	console.log(param2);
-	csInterface.evalScript(`$.evalFile("${jsxPath}"); ${targetFunction}("${param1}", "${param2}", ${param3})`, function (result) {
-		console.log(result);
-	});
 }
 
-
-handicamButton.addEventListener("click", function () {
-	targetFunction = "importHandicam";
-	// run the jsx file
-	runJsxFile(targetFunction, scriptPath);
-})
-
-// Load the SD Extension Preset folder to My Documents
-function runFilesLoader() {
+// (IIFE) Load the SD Extension Preset folder to My Documents upon opening the extension
+(function() {
 	const csInterface = new CSInterface();
 	const jsxPath = csInterface.getSystemPath(SystemPath.EXTENSION) + "/jsx/filesLoader.jsx";
 
@@ -64,5 +85,7 @@ function runFilesLoader() {
 			csInterface.closeExtension();
 		}
 	});
-}
-runFilesLoader();
+})();
+
+//Initialize event listeners
+main.init();
