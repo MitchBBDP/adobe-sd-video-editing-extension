@@ -1,12 +1,9 @@
 ﻿//@include "utils.jsx"
-createNewProject("1qwe qwe mia", "25 November 2023", true);
+
 
 function createNewProject(nameOfTandem, currentDate, hasBoard) {
     var ap = new ActiveProject();
     var srcFolder = ap.getSrcFolder();
-
-    //Set Properties for Default Untitled PrProj
-    ap.InitializeCurrentProject();
 
     //Check if you are in the default untitled prproj
     var fileName = ap.getFileName();
@@ -31,7 +28,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     var fileSelected = ap.fileSelector();
 
     //Check if file selection is valid
-    if (!fileSelected || !ap.selectionValidator(binFolder, fileSelected.length, hasBoard)) {
+    if (!fileSelected || !selectionValidator(fileSelected.length, hasBoard)) {
         tandemFolder.remove();
         return;
     }
@@ -41,11 +38,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Set Properties for Current Tandem PrProj
     ap.InitializeCurrentProject();
-
-    ap.projRoot.createBin("Template");
-    ap.projRoot.createBin("Videos");
-    ap.projRoot.createBin("Sub Clips");
-    ap.fhdBinInitialize();
+    ap.createBin(binFolder);
 
     //Copy Files in a new folder inside the tandem folder
     var videosFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
@@ -55,18 +48,20 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Import FHD Stock Files to PrProj
     var stockFolder = new Folder(srcFolder + "/fhd");
+    ap.createBin("Template");
     ap.importToProject(stockFolder.getFiles(), ap.templateBin);
 
     //Initialize variables for stock template items
-    ap.fhdTemplateToVarInitialize();
+    ap.templateToVarInitialize();
 
     //Initialize variables for tandem videos
     ap.fhdVidsToVarInitialize(hasBoard);
 
     //Rename project files
-    renameProjectFiles(hasBoard);
+    renameTandemVideos(hasBoard);
 
     //Create subclips to remove audio
+    ap.createBin("Sub Clips");
     ap.fhdIntroMask = ap.convertToSubclip(ap.fhdIntroMask);
     ap.walkToPlane = ap.convertToSubclip(ap.walkToPlane);
     ap.freefall = ap.convertToSubclip(ap.freefall);
@@ -115,11 +110,20 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     // ------------------------------- Create New Project Functions ---------------------------- //
     // ----------------------------------------------------------------------------------------- //
 
+    //Validate files selected for import
+    function selectionValidator(selectionLength, hasBoard) {
+        var validator = (!hasBoard && selectionLength >= 4) || (hasBoard && selectionLength >= 5);
+        if (!validator) {
+            alert("If the board exists, select a minimum of 5 files; otherwise, select a minimum of 4 files.", "Error: Invalid Selection", true);
+        }
+        return validator;
+    }
+
     function createFhdSeq(tandemName, presetPath) {
         ap.proj.newSequence(tandemName + " - FHD", presetPath.fsName);
     }
 
-    function renameProjectFiles(hasBoard) {
+    function renameTandemVideos(hasBoard) {
         if (hasBoard) {
             ap.board.name = "Board";
         }
@@ -158,7 +162,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
         }
 
         //Initialize tandem video track clips inside an array variable
-        ap.clipsToVarInitialize();
+        ap.vTrackOneClipsInitialize();
 
         //Determine the last clip in video track one
         var lastInterviewClip = ap.postInterviewVClip[ap.postInterviewVClip.length - 1];
@@ -177,4 +181,88 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
 function insertHandicam() {
     var ap = new ActiveProject();
+
+    //Set Properties for Current Tandem PrProj
+    ap.InitializeCurrentProject();
+    ap.activeSeqAndTracksInitialize();
+
+    //File import
+    var fileSelected = ap.fileSelector();
+    if (!fileSelected) {
+        return;
+    }
+
+    //Copy files to created handicam folder inside the tandem folder
+    var binFolder = "HC Videos";
+    var hcFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
+
+    //Create project bin for handicam and import the copied files inside it
+    ap.createBin(binFolder);
+    ap.importToProject(hcFolder.getFiles(), ap.hcBin);
+
+    //Initialize HC properties
+    ap.hcVidsToVarInitialize();
+
+    //Rename HC files in PrProj
+    renameHCVideos();
+
+    //Create subclip for handicam freefall
+    ap.subClipsBin = ap.getBin("Sub Clips");
+    ap.handicamView = ap.convertToSubclip(ap.handicamView);
+
+    //Initialize Track Clips Properties
+    ap.clipsToVarInitialize();
+
+    //Insert all the under canopy clips after the freefall clip
+    insertUnderCanopy();
+
+    //Insert the handicam freefall at the end of the video
+    insertHCFreefall();
+
+    // ----------------------------------------------------------------------------------------- //
+    // --------------------------------- Insert Handicam Functions ---------------------------- //
+    // ----------------------------------------------------------------------------------------- //
+
+
+    function renameHCVideos() {
+        ap.handicamView.name = "HandicamView";
+        for (var i in ap.underCanopy) {
+            ap.underCanopy[i].name = "UnderCanopy";
+        }
+    }
+
+    function insertUnderCanopy() {
+        for (var i = ap.underCanopy.length - 1; i >= 0; i--) {
+            ap.vTrackOne.insertClip(ap.underCanopy[i], ap.freefallVClip[0].end);
+        }
+        moveForUnderCanopy();
+    }
+
+    function insertHCFreefall() {
+        ap.vTrackOne.insertClip(ap.handicamView, ap.outroVClip.end);
+    }
+
+    function moveForUnderCanopy() {
+        var underCanopyDuration = ap.getClipDuration(ap.underCanopy);
+        ap.outroVClip.move(underCanopyDuration);
+        ap.outroVMaskClip.move(underCanopyDuration);
+        ap.outroAClip.move(underCanopyDuration);
+        ap.outroAMaskClip.move(underCanopyDuration);
+        ap.copyrightClip.move(underCanopyDuration);
+    }
+
 }
+
+function applyTwixtor(){
+    var ap = new ActiveProject();
+}
+// createNewProject("jackson ter hqweayes", "25 November 2023", true);
+// insertHandicam();
+
+// app.enableQE();
+// var qeProj = qe.project;
+// var qeSeq = qe.project.getActiveSequence();
+// var qeTrack = qeSeq.getVideoTrackAt(0);
+
+// var qeStart = qeTrack.getItemAt(5);
+// var timestamp = qeStart.end.timecode;
