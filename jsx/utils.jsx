@@ -131,7 +131,7 @@ ActiveProject.prototype.clipsToVarInitialize = function() {
 };
 
 ActiveProject.prototype.vTrackOneClipsInitialize = function() {
-    this.preInterviewVClip = [], this.walkToPlaneVClip = [], this.freefallVClip = [], this.landingVClip = [], this.postInterviewVClip = [];
+    this.preInterviewVClip = [], this.walkToPlaneVClip = [], this.freefallVClip = [], this.landingVClip = [], this.postInterviewVClip = [], this.underCanopyVClip = [];
     for (var i = 0; i < this.vTrackOne.clips.length; i++) {
         var clip = this.vTrackOne.clips[i];
         var clipName = clip.name.toLowerCase();
@@ -145,6 +145,10 @@ ActiveProject.prototype.vTrackOneClipsInitialize = function() {
             this.landingVClip.push(clip);
         } else if (clipName.indexOf("postinterview") != -1) {
             this.postInterviewVClip.push(clip);
+        } else if (clipName.indexOf("handicamview") != -1) {
+            this.handicamViewVClip = clip;
+        } else if (clipName.indexOf("undercanopy") != -1) {
+            this.underCanopyVClip.push(clip);
         }
     }
 };
@@ -180,7 +184,7 @@ ActiveProject.prototype.vTrackThreeClipsInitialize = function() {
 };
 
 ActiveProject.prototype.aTrackOneClipsInitialize = function() {
-    this.preInterviewAClip = [], this.postInterviewAClip = [];
+    this.preInterviewAClip = [], this.postInterviewAClip = [], this.underCanopyAClip = [];
     for (var i = 0; i < this.aTrackOne.clips.length; i++) {
         var clip = this.aTrackOne.clips[i];
         var clipName = clip.name.toLowerCase();
@@ -188,6 +192,8 @@ ActiveProject.prototype.aTrackOneClipsInitialize = function() {
             this.preInterviewAClip.push(clip);
         } else if (clipName.indexOf("postinterview") != -1) {
             this.postInterviewAClip.push(clip);
+        } else if (clipName.indexOf("undercanopy") != -1) {
+            this.underCanopyAClip.push(clip);
         }
     }
 };
@@ -218,6 +224,39 @@ ActiveProject.prototype.getClipDuration = function(clip) {
         return totalClipDuration;
     } else {
         return clip.getOutPoint().seconds - clip.getInPoint().seconds;
+    }
+};
+
+ActiveProject.prototype.moveClipsAfterTime = function(time, timeToMove, isHandicam) {
+    var trackStart = isHandicam ? 1 : 0;
+    /* Reduce 0.1 seconds to the time argument because two consecutive clips
+       share a start and end time. E.G clip[1].end is the same as clip[2].start*/
+    time -= 0.1;
+    // Loop through video tracks
+    for (var i = trackStart; i < this.vTrack.length; i++) {
+        var track = this.vTrack[i];
+        var clips = track.clips;
+
+        // Loop through clips and move if it starts after the time argument
+        for (var j = clips.numItems - 1; j >= 0; j--) {
+            var clip = clips[j];
+            if (clip.start.seconds > time) {
+                clip.move(timeToMove);
+            }
+        }
+    }
+
+    // Loop through audio tracks
+    for (var i = trackStart; i < this.aTrack.length; i++) {
+        var track = this.aTrack[i];
+        var clips = track.clips;
+
+        for (var j = clips.numItems - 1; j >= 0; j--) {
+            var clip = clips[j];
+            if (clip.start.seconds > time) {
+                clip.move(timeToMove);
+            }
+        }
     }
 };
 
@@ -284,4 +323,150 @@ ActiveProject.prototype.getFileName = function() {
     var fileNameWithoutExtension = fileNameWithExtension.split('.')[0];
 
     return fileNameWithoutExtension;
+};
+
+//------------------------------------------------------------------------//
+//----------------------------- Using QE DOM -----------------------------//
+//------------------------------------------------------------------------//
+
+//Initialize QE
+ActiveProject.prototype.InitializeQEProject = function() {
+    app.enableQE();
+    this.qeProj = qe.project;
+};
+
+//Initialize active QE Sequence and Tracks
+ActiveProject.prototype.activeQESeqAndTracksInitialize = function() {
+    this.qeSeq = this.qeProj.getActiveSequence();
+    this.qeVTrackOne = this.qeSeq.getVideoTrackAt(0);
+    this.qeVTrackTwo = this.qeSeq.getVideoTrackAt(1);
+    this.qeATrackOne = this.qeSeq.getAudioTrackAt(0);
+    this.qeATrackTwo = this.qeSeq.getAudioTrackAt(1);
+};
+
+ActiveProject.prototype.getTwixtorEffect = function() {
+    return this.qeProj.getVideoEffectByName("Twixtor");
+};
+
+ActiveProject.prototype.getPlayheadTimecode = function() {
+    return this.qeSeq.CTI.timecode;
+};
+
+ActiveProject.prototype.newTimeObject = function(time) {
+    var newTime = new Time();
+    if (typeof time === 'string') {
+        newTime.ticks = time;
+    } else if (typeof time === 'number') {
+        newTime.seconds = time;
+    }
+    return newTime;
+};
+
+ActiveProject.prototype.movePlayheadByFrames = function(frames) {
+    var frameRate = this.qeSeq.videoFrameRate;
+    var framesInSeconds = frames / frameRate;
+    var playheadPosSec = this.seq.getPlayerPosition().seconds;
+    var newPlayheadPos = this.newTimeObject(playheadPosSec + framesInSeconds);
+
+    this.seq.setPlayerPosition(newPlayheadPos.ticks)
+};
+
+ActiveProject.prototype.razorAtVTrackOne = function(timecode) {
+    this.qeVTrackOne.razor(timecode, true, true);
+};
+
+ActiveProject.prototype.sliceOneSecond = function() {
+    var frameRate = this.qeSeq.videoFrameRate;
+    var secondsToSlice = 1;
+    var secondsInFrame = secondsToSlice * frameRate;
+    this.razorAtVTrackOne(this.getPlayheadTimecode());
+    this.movePlayheadByFrames(secondsInFrame);
+    this.razorAtVTrackOne(this.getPlayheadTimecode());
+};
+
+ActiveProject.prototype.qeClipsToVarInitialize = function() {
+    this.qeVTrackOneClipsInitialize();
+    this.qeVTrackTwoClipsInitialize();
+    this.qeATrackOneClipsInitialize();
+    this.qeATrackTwoClipsInitialize();
+};
+
+ActiveProject.prototype.qeVTrackOneClipsInitialize = function() {
+    this.qePreInterviewVClip = [], this.qeWalkToPlaneVClip = [], this.qeFreefallVClip = [], this.qeLandingVClip = [], this.qePostInterviewVClip = [], this.qeUnderCanopyVClip = [];
+    for (var i = 0; i < this.qeVTrackOne.numItems; i++) {
+        var clip = this.qeVTrackOne.getItemAt(i);
+        if (clip.type == "Clip") {
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("preinterview") != -1) {
+                this.qePreInterviewVClip.push(clip);
+            } else if (clipName.indexOf("walktoplane") != -1) {
+                this.qeWalkToPlaneVClip.push(clip);
+            } else if (clipName.indexOf("freefall") != -1) {
+                this.qeFreefallVClip.push(clip);
+            } else if (clipName.indexOf("landing") != -1) {
+                this.qeLandingVClip.push(clip);
+            } else if (clipName.indexOf("postinterview") != -1) {
+                this.qePostInterviewVClip.push(clip);
+            } else if (clipName.indexOf("handicamview") != -1) {
+                this.qeHandicamViewVClip = clip;
+            } else if (clipName.indexOf("undercanopy") != -1) {
+                this.qeUnderCanopyVClip.push(clip);
+            } else if (clipName.indexOf("twixtor") != -1) {
+                this.twixtorClip = clip;
+            }
+        }
+    }
+};
+
+ActiveProject.prototype.qeVTrackTwoClipsInitialize = function() {
+    for (var i = 0; i < this.qeVTrackTwo.numItems; i++) {
+        var clip = this.qeVTrackTwo.getItemAt(i);
+        if (clip.type == "Clip") {
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("intro") != -1) {
+                this.qeIntroVClip = clip;
+            } else if (clipName.indexOf("imask") != -1) {
+                this.qeIntroVMaskClip = clip;
+            } else if (clipName.indexOf("omask") != -1) {
+                this.qeOutroVMaskClip = clip;
+            } else if (clipName.indexOf("outro") != -1) {
+                this.qeOutroVClip = clip;
+            }
+        }
+    }
+};
+
+ActiveProject.prototype.qeATrackOneClipsInitialize = function() {
+    this.qePreInterviewAClip = [], this.qePostInterviewAClip = [], this.qeUnderCanopyAClip = [];
+    for (var i = 0; i < this.qeATrackOne.numItems; i++) {
+        var clip = this.qeATrackOne.getItemAt(i);
+        if (clip.type == "Clip") {
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("preinterview") != -1) {
+                this.qePreInterviewAClip.push(clip);
+            } else if (clipName.indexOf("postinterview") != -1) {
+                this.qePostInterviewAClip.push(clip);
+            } else if (clipName.indexOf("undercanopy") != -1) {
+                this.qeUnderCanopyAClip.push(clip);
+            }
+        }
+    }
+};
+
+ActiveProject.prototype.qeATrackTwoClipsInitialize = function() {
+    for (var i = 0; i < this.qeATrackTwo.numItems; i++) {
+        var clip = this.qeATrackTwo.getItemAt(i);
+        if (clip.type == "Clip") {
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("intro") != -1) {
+                this.qeIntroAClip = clip;
+            } else if (clipName.indexOf("omask") != -1) {
+                this.qeOutroAMaskClip = clip;
+            } else if (clipName.indexOf("outro") != -1) {
+                this.qeOutroAClip = clip;
+            } else if (clipName.indexOf("music") != -1) {
+                this.qeFhdMusic = clip;
+            }
+        }
+    }
 };

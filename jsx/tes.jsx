@@ -1,6 +1,5 @@
 ﻿//@include "utils.jsx"
 
-
 function createNewProject(nameOfTandem, currentDate, hasBoard) {
     var ap = new ActiveProject();
     var srcFolder = ap.getSrcFolder();
@@ -196,6 +195,10 @@ function insertHandicam() {
     var binFolder = "HC Videos";
     var hcFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
 
+    if (!hcFolder) {
+        return;
+    }
+
     //Create project bin for handicam and import the copied files inside it
     ap.createBin(binFolder);
     ap.importToProject(hcFolder.getFiles(), ap.hcBin);
@@ -212,6 +215,7 @@ function insertHandicam() {
 
     //Initialize Track Clips Properties
     ap.clipsToVarInitialize();
+
 
     //Insert all the under canopy clips after the freefall clip
     insertUnderCanopy();
@@ -232,30 +236,110 @@ function insertHandicam() {
     }
 
     function insertUnderCanopy() {
+        moveClipsForUnderCanopy();
         for (var i = ap.underCanopy.length - 1; i >= 0; i--) {
             ap.vTrackOne.insertClip(ap.underCanopy[i], ap.freefallVClip[0].end);
         }
-        moveForUnderCanopy();
     }
 
     function insertHCFreefall() {
         ap.vTrackOne.insertClip(ap.handicamView, ap.outroVClip.end);
     }
 
-    function moveForUnderCanopy() {
+    function moveClipsForUnderCanopy() {
         var underCanopyDuration = ap.getClipDuration(ap.underCanopy);
-        ap.outroVClip.move(underCanopyDuration);
-        ap.outroVMaskClip.move(underCanopyDuration);
-        ap.outroAClip.move(underCanopyDuration);
-        ap.outroAMaskClip.move(underCanopyDuration);
-        ap.copyrightClip.move(underCanopyDuration);
+        var lastFreefallClip = ap.freefallVClip[ap.freefallVClip.length - 1];
+        var freefallEndSec = lastFreefallClip.end.seconds;
+        ap.moveClipsAfterTime(freefallEndSec, underCanopyDuration, true);
     }
 
 }
 
-function applyTwixtor(){
+function applyTwixtor() {
+    //Initialize project properties
     var ap = new ActiveProject();
+    ap.InitializeCurrentProject();
+    ap.activeSeqAndTracksInitialize();
+    ap.InitializeQEProject();
+    ap.activeQESeqAndTracksInitialize();
+
+    //Make a 10 frames slice at the playhead
+    ap.sliceOneSecond();
+
+    var twixtorDuration = 3.28;
+
+    //Move clips to make space for the twixtor clip
+    moveClipsForTwixtor(twixtorDuration);
+
+    var twixtorClip = ap.seq.getSelection()[0];
+
+    //Extend the sliced clip to match the twixtor duration
+    extendTwixtorClip(twixtorClip, twixtorDuration);
+
+    //Apply the twixtor effect to the sliced clip
+    addTwixtorEffect(twixtorClip);
+
+    //Set the component parameter for the twixtor clip to match the desired slow-motion
+    modifyTwixtorSettings(twixtorClip);
+
+    // ----------------------------------------------------------------------------------------- //
+    // --------------------------------- Apply Twixtor Functions ------------------------------- //
+    // ----------------------------------------------------------------------------------------- //
+
+    function moveClipsForTwixtor(timeToMove) {
+        var playheadPosSec = ap.seq.getPlayerPosition().seconds;
+        ap.moveClipsAfterTime(playheadPosSec, timeToMove, false);
+    }
+
+    function extendTwixtorClip(clip, extension) {
+        extendedDuration = clip.end.seconds + extension;
+        clip.end = ap.newTimeObject(extendedDuration);
+    }
+
+    function addTwixtorEffect(clip) {
+        //Get the twixtor effect
+        var twixtorEffect = ap.getTwixtorEffect();
+
+        /*Stores the original name in a variable and change the name to Twixtor
+         so that twixtor can be found by the function and assign it to its property*/
+        var clipName = clip.name;
+        clip.name = "Twixtor";
+
+        ap.qeVTrackOneClipsInitialize();
+        ap.twixtorClip.addVideoEffect(twixtorEffect);
+
+        //Revert the clip name to its original name
+        clip.name = clipName;
+    }
+
+    function modifyTwixtorSettings(clip) {
+        var components = clip.components;
+        var speedComponent = components[2].properties[20];
+
+        clip.components[2].properties[2].setValue(1, 1);
+        clip.components[2].properties[3].setValue(0, 1);
+        clip.components[2].properties[22].setValue(2, 1);
+
+        speedComponent.setTimeVarying(true);
+        speedComponent.addKey(clip.inPoint.seconds);
+        speedComponent.addKey(clip.inPoint.seconds + 0.48);
+        speedComponent.addKey(clip.inPoint.seconds + 2);
+        speedComponent.addKey(clip.inPoint.seconds + 3.52);
+        speedComponent.addKey(clip.inPoint.seconds + 4);
+        speedComponent.setValueAtKey(clip.inPoint.seconds, 100);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 0.48, 10);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 2, 2);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 3.52, 10);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 4, 100);
+    }
 }
+// var ap = new ActiveProject();
+//     ap.InitializeCurrentProject();
+//     ap.activeSeqAndTracksInitialize();
+//     var twixtorClip = ap.seq.getSelection()[0];
+//     var x = 5;
+
+
 // createNewProject("jackson ter hqweayes", "25 November 2023", true);
 // insertHandicam();
 

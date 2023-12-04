@@ -1,10 +1,10 @@
 const main = {
 	tandemNameInput: document.getElementById("tandemName"),
-	newProjButton: document.getElementById("newProj"),
-	handicamButton: document.getElementById("insertHC"),
+	newProjButton: document.getElementById("new-proj-button"),
+	handicamButton: document.getElementById("insert-hc-button"),
+	twixtorButton: document.getElementById("twixtor-button"),
 	boardCheck: document.getElementById('hasBoard'),
 	scriptPath: "/jsx/tes.jsx",
-	targetFunction: null,
 
 	//General function for running and communicating with jsx files
 	runJsxFile(targetFunction, param1 = null, param2 = null, param3 = null) {
@@ -36,6 +36,10 @@ const main = {
 		this.runJsxFile("insertHandicam");
 	},
 
+	applyTwixtor() {
+		this.runJsxFile("applyTwixtor");
+	},
+
 	//Clears the input field and checkbox
 	resetUIInputs() {
 		this.tandemNameInput.value = "";
@@ -64,19 +68,21 @@ const main = {
 
 	init() {
 		this.newProjButton.addEventListener("click", () => {
-			this.targetFunction = "createNewProject";
 			this.createNewProject();
 		});
 
 		this.handicamButton.addEventListener("click", () => {
-			this.targetFunction = "insertHandicam";
 			this.insertHandicam();
+		});
+
+		this.twixtorButton.addEventListener("click", () => {
+			this.applyTwixtor();
 		});
 	}
 }
 
-// (IIFE) Load the SD Extension Preset folder to My Documents upon opening the extension
-(function() {
+//Load the SD Extension Preset folder to My Documents upon opening the extension
+function loadTemplateFiles() {
 	const csInterface = new CSInterface();
 	const jsxPath = csInterface.getSystemPath(SystemPath.EXTENSION) + "/jsx/filesLoader.jsx";
 
@@ -85,7 +91,10 @@ const main = {
 			csInterface.closeExtension();
 		}
 	});
-})();
+};
+
+//Immediately run the file loader
+loadTemplateFiles();
 
 //Initialize event listeners
 main.init();
