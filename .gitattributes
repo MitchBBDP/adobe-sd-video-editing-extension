@@ -1,5 +1,0 @@
-.sqpreset filter=lfs diff=lfs merge=lfs -text
-.epr filter=lfs diff=lfs merge=lfs -text
-.mp4 filter=lfs diff=lfs merge=lfs -text
-.mp3 filter=lfs diff=lfs merge=lfs -text
-.mogrt filter=lfs diff=lfs merge=lfs -text

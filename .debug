@@ -1,7 +1,0 @@
-<ExtensionList>
-  <Extension Id="com.sd.videoeditingextension.panel">
-    <HostList>
-      <Host Name="PPRO" Port="8888"/>
-    </HostList>
-  </Extension>
-</ExtensionList>
