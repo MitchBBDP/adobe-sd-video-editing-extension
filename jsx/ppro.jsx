@@ -11,14 +11,14 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
         var userConfirmed = confirm("Do you want to proceed?", true, "Default Untitled Project Not Selected");
 
         if (!userConfirmed) {
-            return;
+            return false;
         }
     }
 
     //Tandem folder creation and error handler
     var tandemFolder = ap.createNewFolder(nameOfTandem);
     if (!tandemFolder) {
-        return;
+        return false;
     }
 
     //File import and error handler
@@ -29,7 +29,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     //Check if file selection is valid
     if (!fileSelected || !selectionValidator(fileSelected.length, hasBoard)) {
         tandemFolder.remove();
-        return;
+        return false;
     }
 
     //Create New Tandem Premiere Pro Project File (Prproj)
@@ -112,6 +112,8 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Savepoint
     ap.proj.save();
+
+    return true;
 
 
     // ----------------------------------------------------------------------------------------- //
@@ -606,6 +608,7 @@ function clipSelect() {
     into our clipId array if there are prior selections. We read the txt database
     to get the key value in a string format and split it with coma to convert it to an array .*/
     var clipId = ap.getClipIdFromDb(selectedClipsDb);
+    var previousClipNum = clipId.video.length + clipId.audio.length;
 
     //Get the selected track item/s in an array
     var clipsSelected = ap.seq.getSelection();
@@ -615,11 +618,11 @@ function clipSelect() {
     if (clipsSelected && clipsSelected.length > 0) {
 
         //Add selected clips to the currenty clip ids array
-        updateClipIds(clipId, clipsSelected)
+        updateClipIds(clipId, clipsSelected);
 
         //Do not accept additional clip id if maximum limit is reached
         if (maximumClipSelected(clipId)) {
-            return;
+            return previousClipNum;
         }
 
         //Write the clip ids array into the txt database
@@ -627,6 +630,8 @@ function clipSelect() {
     } else {
         alert("Please select a clip", "Error: Clip Id Not Found", true);
     }
+
+    return clipId.video.length + clipId.audio.length;
 
     // ----------------------------------------------------------------------------------------- //
     // ----------------------------------- Clip Select Functions ------------------------------- //
@@ -671,12 +676,15 @@ function clipSelect() {
         var maxVidSelection = ap.getBin("HC Videos") ? 13 : 11;
         var maxAudSelection = ap.getBin("HC Videos") ? 2 : 1;
 
-        if (ids.video.length > maxVidSelection || ids.audio.length > maxAudSelection) {
-            alert("Reached maximum clip selection", "Error: Invalid Selection", true);
+        if (ids.video.length > maxVidSelection) {
+            alert("Reached maximum video clip selection", "Error: Invalid Selection", true);
             return true;
+        } else if (ids.audio.length > maxAudSelection) {
+            alert("Reached maximum audio clip selection", "Error: Invalid Selection", true);
+            return true;
+        } else {
+            return false;
         }
-
-        return false;
     }
 }
 
@@ -694,6 +702,7 @@ function decrementSelection() {
     clipId.audio.pop();
 
     ap.writeTxtFile(selectedClipsDb, clipId);
+    return clipId.video.length + clipId.audio.length;
 }
 
 
@@ -1061,3 +1070,12 @@ function renderProject() {
         app.encoder.startBatch();
     }
 }
+
+function autoDuckMusic() {
+    var ap = new ActiveProject();
+    ap.initializeCurrentProject();
+    ap.activeSeqAndTracksInitialize();
+
+    ap.autoDuck();
+}
+
