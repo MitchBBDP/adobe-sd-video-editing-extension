@@ -278,14 +278,23 @@ function applyTwixtor() {
     ap.initializeQEProject();
     ap.activeQESeqAndTracksInitialize();
 
-    //Make a 10 frames slice at the playhead
+    //Make a one second slice at the playhead
     ap.sliceOneSecond();
+
+    /*Inserted sleep function to pause the script execution for a very short 
+    time to ensure the selecting of clip will not bug out. Known bugs: 
+    (1) extendTwixtorClip getting blocked
+    (2) twixtor effect not applying to the correct clip
+    (3) Source monitor displays the start of the video after applying twixtor*/
+    $.sleep(50);
+    ap.movePlayheadByFrames(-20);
+    $.sleep(50);
 
     //Get the twixtor clip
     var twixtorClip = ap.seq.getSelection()[0];
 
     var twixtorDuration = 3.28;
-
+    
     //Move clips to make space for the twixtor clip
     moveClipsForTwixtor(twixtorDuration);
 
@@ -301,10 +310,6 @@ function applyTwixtor() {
     // ----------------------------------------------------------------------------------------- //
     // --------------------------------- Apply Twixtor Functions ------------------------------- //
     // ----------------------------------------------------------------------------------------- //
-    function savePlayheadPosition() {
-        var currPlayheadSec = ap.getPlayheadSeconds();
-        return ap.newTimeObject(currPlayheadSec);
-    }
 
     function moveClipsForTwixtor(timeToMove) {
         var playheadPosSec = ap.seq.getPlayerPosition().seconds;
@@ -527,10 +532,10 @@ function addMEWT() {
             for (var i = 0; i < lastIndex; i++) {
                 ap.addTransition(ap.qePostInterviewAClip[i], ap.constantPower, "end", transitionDuration);
             }
-            ap.addTransition(ap.qePostInterviewAClip[0], ap.exponentialFade, "start", transitionDuration);
-            ap.addTransition(ap.qePostInterviewAClip[lastIndex], ap.exponentialFade, "end", transitionDuration);
+            ap.addTransition(ap.qePostInterviewAClip[0], ap.constantPower, "start", transitionDuration);
+            ap.addTransition(ap.qePostInterviewAClip[lastIndex], ap.constantPower, "end", transitionDuration);
         } else {
-            ap.addTransition(ap.qePostInterviewAClip[0], ap.exponentialFade, "both", transitionDuration);
+            ap.addTransition(ap.qePostInterviewAClip[0], ap.constantPower, "both", transitionDuration);
         }
 
         //If there is more than one undercanopy clip, add constant power transition in between
@@ -1014,7 +1019,7 @@ function applyEffectsAndTransitionsToSME() {
         }
     }
 }
-renderProject("image");
+
 /*sequenceType parameter is either fhd, sme, all, or image*/
 function renderProject(sequenceType) {
     var ap = new ActiveProject();
