@@ -405,7 +405,10 @@ ActiveProject.prototype.trimInAndOutPoint = function(bin) {
             var fileInPoint = projectFile.getInPoint().seconds;
 
             //Adjust the in-point or out-point of project file if its not an interview clip
-            if (projectFile.name.toLowerCase().indexOf("postinterview") == -1 && projectFile.name.toLowerCase().indexOf("preinterview") == -1) {
+            //Also exclude the intro mask subclip from the trim
+            if (projectFile.name.toLowerCase().indexOf("postinterview") == -1 
+            && projectFile.name.toLowerCase().indexOf("preinterview") == -1
+            && projectFile.name.toLowerCase().indexOf("imask") == -1) {
                 projectFile.setInPoint(fileInPoint + 1, 4);
                 projectFile.setOutPoint(fileOutPoint - 1, 4);
             }
@@ -809,7 +812,7 @@ ActiveProject.prototype.autoDuck = function() {
                 }
             }
             //Social Media Edit has dialogueEnd = musicEnd scenario
-        } else if (dialogueStart > musicStart && dialogueEnd = musicEnd) {
+        } else if (dialogueStart > musicStart && dialogueEnd == musicEnd) {
             if (dialogueStart !== prevClipEnd) {
                 var keyAtDialogueStart = dialogueStart - musicStart + musicInPoint;
                 var firstKey = keyAtDialogueStart - .5;
