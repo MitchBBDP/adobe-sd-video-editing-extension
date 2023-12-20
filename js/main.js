@@ -12,10 +12,10 @@ const main = {
 	effectsAndTransitionSMEButton: document.getElementById("fx-and-transitions-button"),
 	fhdRenderProjectButton: document.getElementById("fhd-render-button"),
 	smeRenderProjectButton: document.getElementById("sme-render-button"),
-
+	allRenderProjectButton: document.getElementById("all-render-button"),
+	imageRenderProjectButton: document.getElementById("export-frame-button"),
 	fhdDuckButton: document.getElementById("fhd-duck-button"),
 	smeDuckButton: document.getElementById("sme-duck-button"),
-
 	homeTab: document.getElementById('homeTab'),
 	homeTabButtons: document.getElementById('homeButtonHolder'),
 	fhdTab: document.getElementById('fhdTab'),
@@ -62,19 +62,10 @@ const main = {
 			const year = date.getFullYear();
 			const currentDate = `${day} ${month} ${year}`;
 
-			this.runJsxFile("createNewProject", newTandemName, currentDate, hasBoard)
-			.then(result => {
-				//callback result returns a string
-				if (result !== 'false') {
-					this.showTabButtons(this.fhdTabButtons, this.fhdTab);
-					this.boardCheck.checked = true;
-				}
-			})
-			.catch(error => {
-				this.handleJsxError(error);
-			});
+			this.runJsxFile("createNewProject", newTandemName, currentDate, hasBoard);
 
 			this.tandemNameInput.value = "";
+			// this.boardCheck.checked = true;
 		} else {
 			const content = "Input must be: (1) More than three words, (2) No leading or trailing spaces, (3) No consecutive spaces.";
 			const title = "Invalid Input";
@@ -97,7 +88,6 @@ const main = {
 
 	reframeToVertical() {
 		this.runJsxFile("reframeToVertical");
-		this.showTabButtons(this.smeTabButtons, this.smeTab);
 	},
 
 	clipSelect() {
@@ -138,14 +128,36 @@ const main = {
 		this.runJsxFile("applyEffectsAndTransitionsToSME");
 	},
 
-	renderProject() {
-		this.runJsxFile("renderProject");
+	renderProject(option) {
+		this.runJsxFile("renderProject", option);
 		this.showTabButtons(this.homeTabButtons, this.homeTab);
 	},
 
 	autoDuckMusic() {
 		this.runJsxFile("autoDuckMusic");
 	},
+
+	runSequenceChangeEvent() {
+		this.runJsxFile("sequenceChangeListener");
+	},
+
+	/*Fetch sequence change event from ppro sequenceChangeListener().*/
+	addSequenceChangeListener() {
+		const csInterface = new CSInterface();
+		csInterface.addEventListener("com.adobe.csxs.events.SequenceChangeEvent", function (event) {
+			main.autoSwitchTabs(event.data);
+		});
+	},
+
+	autoSwitchTabs(sequenceName) {
+        if (sequenceName.indexOf("- FullHD") !== -1) {
+            this.showTabButtons(this.fhdTabButtons, this.fhdTab);
+        } else if (sequenceName.indexOf("- SocialMediaEdit") !== -1) {
+            this.showTabButtons(this.smeTabButtons, this.smeTab);
+        } else {
+			this.showTabButtons(this.homeTabButtons, this.homeTab);
+		}
+    },
 
 	//Validate user input for the tandem name to avoid errors
 	//****Must have more than three words
@@ -226,14 +238,16 @@ const main = {
 		this.handleButtonClick(this.effectsAndTransitionSMEButton, () => this.applyEffectsAndTransitionsToSME());
 		this.handleButtonClick(this.fhdDuckButton, () => this.autoDuckMusic());
 		this.handleButtonClick(this.smeDuckButton, () => this.autoDuckMusic());
-		this.handleButtonClick(this.fhdRenderProjectButton, () => this.renderProject());
-		this.handleButtonClick(this.smeRenderProjectButton, () => this.renderProject());
+		this.handleButtonClick(this.fhdRenderProjectButton, () => this.renderProject("fhd"));
+		this.handleButtonClick(this.smeRenderProjectButton, () => this.renderProject("sme"));
+		this.handleButtonClick(this.allRenderProjectButton, () => this.renderProject("all"));
+		this.handleButtonClick(this.imageRenderProjectButton, () => this.renderProject("image"));
 
 		//Handles enter key press while writing tandem name
 		this.tandemNameInput.addEventListener("keydown", (event) => {
 			if (event.keyCode === 13 || event.key === 'Enter') {
-			  event.preventDefault(); 
-			  this.createNewProject();
+				event.preventDefault();
+				this.createNewProject();
 			}
 		});
 
@@ -242,7 +256,9 @@ const main = {
 		this.fhdTab.addEventListener("click", () => this.showTabButtons(this.fhdTabButtons, this.fhdTab));
 		this.smeTab.addEventListener("click", () => this.showTabButtons(this.smeTabButtons, this.smeTab));
 		this.settingsTab.addEventListener("click", () => this.showTabButtons(this.settingsTabButtons, this.settingsTab));
-		this.boardCheck.addEventListener("change", () => this.boardSwitch(this.boardCheck, this.boardLabel));	
+		this.boardCheck.addEventListener("change", () => this.boardSwitch(this.boardCheck, this.boardLabel));
+		this.runSequenceChangeEvent();
+		this.addSequenceChangeListener();
 
 		document.addEventListener("contextmenu", function (event) {
 			event.preventDefault();

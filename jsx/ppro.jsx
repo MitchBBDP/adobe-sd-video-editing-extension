@@ -11,14 +11,14 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
         var userConfirmed = confirm("Do you want to proceed?", true, "Default Untitled Project Not Selected");
 
         if (!userConfirmed) {
-            return false;
+            return;
         }
     }
 
     //Tandem folder creation and error handler
     var tandemFolder = ap.createNewFolder(nameOfTandem);
     if (!tandemFolder) {
-        return false;
+        return;
     }
 
     //File import and error handler
@@ -29,7 +29,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     //Check if file selection is valid
     if (!fileSelected || !selectionValidator(fileSelected.length, hasBoard)) {
         tandemFolder.remove();
-        return false;
+        return;
     }
 
     //Create New Tandem Premiere Pro Project File (Prproj)
@@ -112,9 +112,6 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Savepoint
     ap.proj.save();
-
-    return true;
-
 
     // ----------------------------------------------------------------------------------------- //
     // ------------------------------- Create New Project Functions ---------------------------- //
@@ -1017,28 +1014,38 @@ function applyEffectsAndTransitionsToSME() {
         }
     }
 }
-
-function renderProject() {
+renderProject("image");
+/*sequenceType parameter is either fhd, sme, all, or image*/
+function renderProject(sequenceType) {
     var ap = new ActiveProject();
     ap.initializeCurrentProject();
+    ap.activeSeqAndTracksInitialize();
+    ap.initializeQEProject();
+    ap.activeQESeqAndTracksInitialize();
 
     var srcFolder = ap.getSrcFolder();
     var presetFolder = new Folder(srcFolder + "/render");
     var fhdPreset = presetFolder.fsName + "\\" + "FullHDPreset.epr";
-    var SMEPreset = presetFolder.fsName + "\\" + "IGPreset.epr";
-
-    var renderFolderName = "Rendered Files";
-    var renderFolder = ap.createRenderFolder(renderFolderName);
+    var smePreset = presetFolder.fsName + "\\" + "IGPreset.epr";
+    var miPreset = presetFolder.fsName + "\\" + "MultiImagePreset.epr";
+    var siPreset = presetFolder.fsName + "\\" + "SingleImagePreset.epr";
 
     var projectSequences = ap.proj.sequences;
 
-    //Render all project sequences
-    renderSequencesInAME(projectSequences);
+    if (sequenceType === "freefall") {
+        var success = renderFreefallInAME();
+    } else if (sequenceType === "image") {
+        var success = renderFrameInAME();
+    } else {
+        var success = renderSequencesInAME(projectSequences, sequenceType);
+        ap.proj.closeDocument(1, 0); //Parameter: (saveFirst, promptUserForChanges)
+    }
 
-    //Save and close project file. Parameter: (saveFirst, promptUserForChanges)
-    ap.proj.closeDocument(1, 0);
+    function renderSequencesInAME(sequences, sequenceType) {
+        var isEncoded = null;
+        var renderFolderName = "Rendered Files";
+        var renderFolder = ap.createRenderFolder(renderFolderName);
 
-    function renderSequencesInAME(sequences) {
         for (var i = 0; i < sequences.length; i++) {
             var sequence = sequences[i];
             var sequenceName = sequence.name;
@@ -1054,20 +1061,77 @@ function renderProject() {
 
             var renderPath = renderFolder.fsName + "\\" + renderName + ".mp4";
 
-            if (isFhdOrSME === "FullHD") {
-                var encoded = ap.encoder.encodeSequence(sequence, renderPath, fhdPreset, 2, 1);
-            } else if (isFhdOrSME === "SocialMediaEdit") {
-                var encoded = ap.encoder.encodeSequence(sequence, renderPath, SMEPreset, 2, 1);
-            } else {
-                alert("Cannot render sequence that is not ending with FullHD or SocialMediaEdit", "Error: Incorrect Sequence", true)
-            }
-
-            if (!encoded) {
-                alert("Failed to send the sequence to Adobe Media Encoder", "Error: Encoding Error", true);
+            if (sequenceType === "fhd" && isFhdOrSME === "FullHD") {
+                isEncoded = ap.encoder.encodeSequence(sequence, renderPath, fhdPreset, 2, 1);
+            } else if (sequenceType === "sme" && isFhdOrSME === "SocialMediaEdit") {
+                isEncoded = ap.encoder.encodeSequence(sequence, renderPath, smePreset, 2, 1);
+            } else if (sequenceType === "all" && isFhdOrSME === "FullHD") {
+                isEncoded = ap.encoder.encodeSequence(sequence, renderPath, fhdPreset, 2, 1);
+            } else if (sequenceType === "all" && isFhdOrSME === "SocialMediaEdit") {
+                isEncoded = ap.encoder.encodeSequence(sequence, renderPath, smePreset, 2, 1);
             }
         }
 
         app.encoder.startBatch();
+        return isEncoded;
+    }
+
+    function renderFreefallInAME() {
+        var isEncoded = null;
+        var freefall = getFreefallProjectItem();
+
+        if (freefall) {
+            var photosFolderName = "Photos";
+            var photosFolder = ap.createPhotosFolder(photosFolderName);
+            var renderPath = photosFolder.fsName + "\\" + "G001000.jpg";
+            isEncoded = ap.encoder.encodeProjectItem(freefall, renderPath, miPreset, 0, 1);
+            app.encoder.startBatch();
+        }
+
+        return isEncoded;
+
+        //Loops through the videos bin to find and return the freefall project item
+        function getFreefallProjectItem() {
+            var vidBin = ap.getBin("Videos");
+            for (var i = 0; i < vidBin.children.length; i++) {
+                var projectItem = vidBin.children[i];
+                if (projectItem.name === "Freefall") {
+                    return projectItem;
+                }
+            }
+            return null;
+        }
+    }
+
+    function renderFrameInAME() {
+        var isEncoded = null;
+
+        var inPoint = ap.getPlayheadSeconds();
+        var frames = 1;
+        var framesInSeconds = ap.framesToSeconds(frames);
+        var outPoint = inPoint + framesInSeconds;
+
+        ap.seq.setInPoint(inPoint);
+        ap.seq.setOutPoint(outPoint);
+
+        var photosFolderName = "Photos";
+        var photosFolder = ap.createPhotosFolder(photosFolderName);
+        var renderPath = photosFolder.fsName + "\\" + "G0010000.jpg";
+
+
+
+
+        //need iconfirm kung may marerender ba
+        // napapalitan yugn rendered photo kapag nag render uelt kasi same name
+
+
+        isEncoded = ap.encoder.encodeSequence(ap.seq, renderPath, siPreset, 1, 1);
+        app.encoder.startBatch();
+
+        ap.seq.setInPoint(0);
+        ap.seq.setOutPoint(0);
+
+        return isEncoded;
     }
 }
 
@@ -1079,3 +1143,18 @@ function autoDuckMusic() {
     ap.autoDuck();
 }
 
+function sequenceChangeListener() {
+    app.bind('onSequenceActivated', mySequenceActivatedFxn);
+    // app.unbind('onSequenceActivated', mySequenceActivatedFxn);
+
+    function mySequenceActivatedFxn() {
+        var eoName = "PlugPlugExternalObject.dll";
+        var plugplugLibrary = new ExternalObject("lib:" + eoName);
+        if (plugplugLibrary) {
+            var eventObj = new CSXSEvent();
+            eventObj.type = "com.adobe.csxs.events.SequenceChangeEvent";
+            eventObj.data = app.project.activeSequence.name;
+            eventObj.dispatch();
+        }
+    }
+}

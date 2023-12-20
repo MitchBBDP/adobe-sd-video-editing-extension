@@ -52,23 +52,23 @@
 				<div id="reframeToVertical" class="col-md-2">
 					<button id="reframe-button" class="buttonClass">Reframe</button>
 				</div>
-				<div id="renderAndExit" class="col-md-2">
-					<button id="fhd-render-button" class="buttonClass">Render</i></button>
+				<div id="renderFHD" class="col-md-2">
+					<button id="fhd-render-button" class="buttonClass">Render</button>
 				</div>
 				<div class="miscButtons col-md-12">
 					<button id="copy-photos-button" class="buttonClass miscButton">Copy Photos</button>
-					<button id="export-frame-button" class="buttonClass miscButton">Export Frame</button>
-					<button id="frame-grabing-button" class="buttonClass miscButton">Clip to Photos</button>
-					<button id="fhd-duck-button" class="buttonClass miscButton">Auto-Duck</button>	
+					<button id="export-frame-button" class="buttonClass miscButton">Single SS</button>
+					<button id="frame-grabing-button" class="buttonClass miscButton">Multiple SS</button>
+					<button id="fhd-duck-button" class="buttonClass miscButton">Auto-Duck</button>
 				</div>
 			</div>
 			<!-- Buttons for Social Media Edit-->
 			<div id="smeButtonHolder" class="row g-1 justify-content-between d-none">
 				<div id="selectContainer" class="col-md-3">
-					<div id="selectClips">
+					<div id="selectClips" class="smeMainButtons">
 						<button id="select-button" class="buttonClass">Select Clips</button>
 					</div>
-					<div id="decrementResetContainer">
+					<div id="decrementResetContainer" class="smeSubButtons">
 						<div id="decrementClips" class="decrementResetWrapper">
 							<button id="decrement-button" class="buttonClass"><i class="bi bi-dash-circle"></i></button>
 						</div>
@@ -80,19 +80,26 @@
 						</div>
 					</div>
 				</div>
-				<div id="alignToSME" class="col-md-3">
-					<button id="align-button" class="buttonClass">Align Clips</i></button>
+				<div id="smeAlignContainer" class="col-md-3">
+					<div id="alignToSME" class="smeMainButtons">
+						<button id="align-button" class="buttonClass">Align Clips</button>
+					</div>
 				</div>
 				<div id="effectsContainer" class="col-md-3">
-					<div id="effectsAndTransitionSME">
-						<button id="fx-and-transitions-button" class="buttonClass">Fx & Trans</i></button>
+					<div id="effectsAndTransitionSME" class="smeMainButtons">
+						<button id="fx-and-transitions-button" class="buttonClass">Fx & Trans</button>
 					</div>
-					<div id="autoDuckSME">
-						<button id="sme-duck-button" class="buttonClass">Auto-Duck</i></button>
+					<div id="autoDuckSME" class="smeSubButtons">
+						<button id="sme-duck-button" class="buttonClass">Auto-Duck</button>
 					</div>
 				</div>
-				<div id="renderAndExit" class="col-md-3">
-					<button id="sme-render-button" class="buttonClass">Render</i></button>
+				<div id="smeRenderContainer" class="col-md-3">
+					<div id="renderAll" class="smeMainButtons">
+						<button id="all-render-button" class="buttonClass">Render All</button>
+					</div>
+					<div id="renderSME" class="smeSubButtons">
+						<button id="sme-render-button" class="buttonClass">Render SME</button>
+					</div>
 				</div>
 			</div>
 			<!-- Buttons for Settings Configuration -->

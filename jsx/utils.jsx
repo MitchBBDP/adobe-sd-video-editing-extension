@@ -568,7 +568,7 @@ ActiveProject.prototype.getGrandParentFolder = function() {
 
 //Create new folder inside the parent folder
 ActiveProject.prototype.createNewFolder = function(folderName) {
-    parentFolder = this.getParentFolder();
+    var parentFolder = this.getParentFolder();
     var newFolder = new Folder(parentFolder + "/" + folderName);
     if (newFolder.exists) {
         alert(folderName + " " + "folder already exists", "Error: Duplicate Folder", true);
@@ -581,13 +581,25 @@ ActiveProject.prototype.createNewFolder = function(folderName) {
 
 //Create new folder inside the parent folder
 ActiveProject.prototype.createRenderFolder = function(folderName) {
-    grandParentFolder = this.getGrandParentFolder();
+    var grandParentFolder = this.getGrandParentFolder();
     var newFolder = new Folder(grandParentFolder + "/" + folderName);
     if (newFolder.exists) {
         return newFolder;
     } else {
         newFolder.create();
         return newFolder;
+    }
+};
+
+//Create photos folder inside the parent folder
+ActiveProject.prototype.createPhotosFolder = function(folderName) {
+    var parentFolder = this.getParentFolder();
+    var photosFolder = new Folder(parentFolder + "/" + folderName);
+    if (photosFolder.exists) {
+        return photosFolder;
+    } else {
+        photosFolder.create();
+        return photosFolder;
     }
 };
 
