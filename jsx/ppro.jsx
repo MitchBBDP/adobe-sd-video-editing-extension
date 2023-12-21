@@ -286,15 +286,15 @@ function applyTwixtor() {
     (1) extendTwixtorClip getting blocked
     (2) twixtor effect not applying to the correct clip
     (3) Source monitor displays the start of the video after applying twixtor*/
-    $.sleep(50);
-    ap.movePlayheadByFrames(-20);
-    $.sleep(50);
+    $.sleep(25);
+    ap.movePlayheadByFrames(-15);
+    $.sleep(25);
 
     //Get the twixtor clip
     var twixtorClip = ap.seq.getSelection()[0];
 
     var twixtorDuration = 3.28;
-    
+
     //Move clips to make space for the twixtor clip
     moveClipsForTwixtor(twixtorDuration);
 
@@ -340,6 +340,7 @@ function applyTwixtor() {
     function modifyTwixtorSettings(clip) {
         var components = clip.components;
         var speedComponent = components[2].properties[20];
+        var updateUI = true;
 
         clip.components[2].properties[2].setValue(1, 1);
         clip.components[2].properties[3].setValue(0, 1);
@@ -351,11 +352,11 @@ function applyTwixtor() {
         speedComponent.addKey(clip.inPoint.seconds + 2);
         speedComponent.addKey(clip.inPoint.seconds + 3.52);
         speedComponent.addKey(clip.inPoint.seconds + 4);
-        speedComponent.setValueAtKey(clip.inPoint.seconds, 100);
-        speedComponent.setValueAtKey(clip.inPoint.seconds + 0.48, 10);
-        speedComponent.setValueAtKey(clip.inPoint.seconds + 2, 2);
-        speedComponent.setValueAtKey(clip.inPoint.seconds + 3.52, 10);
-        speedComponent.setValueAtKey(clip.inPoint.seconds + 4, 100);
+        speedComponent.setValueAtKey(clip.inPoint.seconds, 100, updateUI);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 0.48, 10, updateUI);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 2, 2, updateUI);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 3.52, 10, updateUI);
+        speedComponent.setValueAtKey(clip.inPoint.seconds + 4, 100, updateUI);
     }
 }
 
@@ -369,6 +370,7 @@ function addMEWT() {
     ap.activeSeqAndTracksInitialize();
     ap.activeQESeqAndTracksInitialize();
     ap.vTrackOneClipsInitialize();
+    ap.aTrackOneClipsInitialize();
 
     //Check if exit with twixtor has been made    
     var exitClip = ap.freefallVClip[1];
@@ -439,7 +441,7 @@ function addMEWT() {
 
         /*Get the first post-interview clip start time, add 5 seconds, 
         then assign it as the end time of the music clip*/
-        var musicClipEnd = ap.postInterviewVClip[0].start.seconds + 5;
+        var musicClipEnd = ap.postInterviewAClip[0].start.seconds + 3;
         //Prevent the music from overlapping the outro sound
         if (musicClipEnd > ap.outroMaskAClip.end.seconds) {
             musicClipEnd = ap.outroMaskAClip.end.seconds - 1;
@@ -530,10 +532,9 @@ function addMEWT() {
         if (ap.qePostInterviewAClip.length > 1) {
             var lastIndex = ap.qePostInterviewAClip.length - 1;
             for (var i = 0; i < lastIndex; i++) {
-                ap.addTransition(ap.qePostInterviewAClip[i], ap.constantPower, "end", transitionDuration);
+                ap.addTransition(ap.qePostInterviewAClip[i], ap.constantPower, "start", transitionDuration);
             }
-            ap.addTransition(ap.qePostInterviewAClip[0], ap.constantPower, "start", transitionDuration);
-            ap.addTransition(ap.qePostInterviewAClip[lastIndex], ap.constantPower, "end", transitionDuration);
+            ap.addTransition(ap.qePostInterviewAClip[lastIndex], ap.constantPower, "both", transitionDuration);
         } else {
             ap.addTransition(ap.qePostInterviewAClip[0], ap.constantPower, "both", transitionDuration);
         }
@@ -559,18 +560,20 @@ function addMEWT() {
     }
 
 }
-
+reframeToVertical();
 function reframeToVertical() {
     var ap = new ActiveProject();
     ap.initializeCurrentProject();
     ap.activeSeqAndTracksInitialize();
+    ap.initializeQEProject();
+    ap.activeQESeqAndTracksInitialize();
 
     //Reframe the sequence to 9:16 aspect ratio
     /*'faster' argument is for the reframe to create as many keyframes as possible
     to follow the action properly. We can set this to 'default' or 'slower' if necessary.*/
     var seqNameSplit = ap.seq.name.split('-');
     var igSeqName = seqNameSplit[0];
-    ap.seq.autoReframeSequence(9, 16, 'slower', igSeqName + "- SocialMediaEdit", false);
+    ap.seq.autoReframeSequence(9, 16, 'faster', igSeqName + "- SocialMediaEdit", false);
 
     //Initialize the sequence property again because auto-reframe creates a new sequence
     ap.activeSeqAndTracksInitialize();
@@ -578,6 +581,10 @@ function reframeToVertical() {
 
     //Remove all unnecessary clips for Social Media Edit
     removeUnusedClips();
+
+    //Remove all transitions
+    // removeTransitions(ap.qeATrackOne);
+    // removeTransitions(ap.qeVTrackOne);
 
     //Savepoint
     ap.proj.save();
@@ -596,6 +603,19 @@ function reframeToVertical() {
         ap.removeClip(ap.stockTwoClip);
     }
 
+    function removeTransitions(track) {
+        var test = ap.aTrackOne.transitions;
+        var totalTransItems = track.numTransitions;
+        // while (totalTransItems > 1) {
+            // for (var i = 0; i < totalTransItems; i++) {
+            //     var transition = track.getTransitionAt(i);
+            //     if (transition.type === 'Transition') {
+            //         transition.remove();
+            //     }
+            // }
+            // totalTransItems = track.numTransitions;
+        // }
+    }
 }
 
 function clipSelect() {
@@ -610,7 +630,7 @@ function clipSelect() {
     into our clipId array if there are prior selections. We read the txt database
     to get the key value in a string format and split it with coma to convert it to an array .*/
     var clipId = ap.getClipIdFromDb(selectedClipsDb);
-    var previousClipNum = clipId.video.length + clipId.audio.length;
+    var previousClipNum = clipId.video.length;
 
     //Get the selected track item/s in an array
     var clipsSelected = ap.seq.getSelection();
@@ -633,7 +653,7 @@ function clipSelect() {
         alert("Please select a clip", "Error: Clip Id Not Found", true);
     }
 
-    return clipId.video.length + clipId.audio.length;
+    return clipId.video.length;
 
     // ----------------------------------------------------------------------------------------- //
     // ----------------------------------- Clip Select Functions ------------------------------- //
@@ -676,13 +696,9 @@ function clipSelect() {
 
     function maximumClipSelected(ids) {
         var maxVidSelection = ap.getBin("HC Videos") ? 13 : 11;
-        var maxAudSelection = ap.getBin("HC Videos") ? 2 : 1;
 
         if (ids.video.length > maxVidSelection) {
             alert("Reached maximum video clip selection", "Error: Invalid Selection", true);
-            return true;
-        } else if (ids.audio.length > maxAudSelection) {
-            alert("Reached maximum audio clip selection", "Error: Invalid Selection", true);
             return true;
         } else {
             return false;

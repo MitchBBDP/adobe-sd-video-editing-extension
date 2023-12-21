@@ -359,10 +359,28 @@ ActiveProject.prototype.adjustmentLayersToVar = function() {
 };
 
 //Get the clips array and the maximum number of array length in order to remove any excess clips
-ActiveProject.prototype.removeExcessSocMedClips = function(clip, max) {
-    if (clip.length > max) {
-        for (var i = max; i < clip.length; i++) {
-            clip[i].remove(0, 0);
+ActiveProject.prototype.removeExcessSocMedClips = function(clipArray, max) {
+    /*Check if clip is postinterview:
+    (1) If there is a landing clip, remove all postinterview video clip except the last element
+    (2) If there is no landing clip, rename the first clip to "Landing" and keep the last element
+    (3) If the clip is audio, keep only the last element
+    If the clip is not post interview, remove all excess clips*/
+    if (clipArray.length > 0) {
+        if (clipArray[0].name.toLowerCase().indexOf("postinterview") != -1 && clipArray.length > max) {
+            if (this.smLandingVClip.length > 0 || clipArray[0].mediaType == "Audio") {
+                for (var i = 0; i < clipArray.length - 1; i++) {
+                    clipArray[i].remove(0, 0);
+                }
+            } else {
+                clipArray[0].name = "Landing";
+                for (var i = 1; i < clipArray.length - 1; i++) {
+                    clipArray[i].remove(0, 0);
+                }
+            }
+        } else if (clipArray.length > max) {
+            for (var i = max; i < clipArray.length; i++) {
+                clipArray[i].remove(0, 0);
+            }
         }
     }
 };
@@ -374,7 +392,24 @@ ActiveProject.prototype.alignClipsToTime = function(clip, startPos, endPos) {
         clip.move(secondsToMove);
 
         //Extend or shorten the clip if necessary
-        clip.end = this.newTimeObject(endPos);
+        clip.projectItem.clearOutPoint();
+        var originalDuration = clip.projectItem.getOutPoint().seconds;
+
+        var maxClipEnd = this.newTimeObject(clip.start.seconds - clip.inPoint.seconds + originalDuration);
+        var newClipEnd = this.newTimeObject(endPos);
+        var modifiedDuration = newClipEnd.seconds - clip.start.seconds + clip.inPoint.seconds;
+        var excessDuration = (newClipEnd.seconds - clip.start.seconds) - (maxClipEnd.seconds - clip.start.seconds);
+
+        clip.end = newClipEnd;
+
+        if (modifiedDuration > originalDuration) {
+            clip.inPoint = this.newTimeObject(clip.inPoint.seconds - excessDuration);
+        }
+
+        if (clip.duration.seconds > originalDuration) {
+            clip.inPoint = this.newTimeObject(0);
+            clip.end = maxClipEnd;
+        }
     }
 };
 
@@ -406,9 +441,9 @@ ActiveProject.prototype.trimInAndOutPoint = function(bin) {
 
             //Adjust the in-point or out-point of project file if its not an interview clip
             //Also exclude the intro mask subclip from the trim
-            if (projectFile.name.toLowerCase().indexOf("postinterview") == -1 
-            && projectFile.name.toLowerCase().indexOf("preinterview") == -1
-            && projectFile.name.toLowerCase().indexOf("imask") == -1) {
+            if (projectFile.name.toLowerCase().indexOf("postinterview") == -1 &&
+                projectFile.name.toLowerCase().indexOf("preinterview") == -1 &&
+                projectFile.name.toLowerCase().indexOf("imask") == -1) {
                 projectFile.setInPoint(fileInPoint + 1, 4);
                 projectFile.setOutPoint(fileOutPoint - 1, 4);
             }
@@ -565,7 +600,7 @@ ActiveProject.prototype.getParentFolder = function() {
 //Get the Grand Parent Folder Path of the Tandem Files
 ActiveProject.prototype.getGrandParentFolder = function() {
     var parentFolderPath = app.project.path.substring(0, app.project.path.lastIndexOf("\\"));
-    var grandParentFolderPath  = parentFolderPath.substring(0, parentFolderPath.lastIndexOf("\\") + 1);
+    var grandParentFolderPath = parentFolderPath.substring(0, parentFolderPath.lastIndexOf("\\") + 1);
     return new Folder(grandParentFolderPath);
 };
 
@@ -710,6 +745,10 @@ ActiveProject.prototype.adjustVolume = function(clip, db) {
 ActiveProject.prototype.autoDuck = function() {
     //Assign this to a variable so compareOverlap function can access the dbToDec
     var ap = this;
+    var updateUI = true;
+
+    //Loop through the music track first to check if there are existing keyframes to clear
+    removeKeyframes(this.aTrackTwo);
 
     //Loop through audio track one to get the dialogue clips
     for (var i = 0; i < this.aTrackOne.clips.length; i++) {
@@ -769,13 +808,14 @@ ActiveProject.prototype.autoDuck = function() {
         is a need to increase or decrease the volume of the music.*/
         if (dialogueStart > musicStart && dialogueEnd > musicEnd) {
             if (dialogueStart !== prevClipEnd) {
-                var firstKey = dialogueStart - musicStart + musicInPoint;
+                var offsetBySeconds = 1;
+                var firstKey = dialogueStart - musicStart + musicInPoint - offsetBySeconds;
                 var secondKey = musicEnd - musicStart + musicInPoint;
                 if (firstKey && secondKey) {
                     musicVolume.addKey(firstKey);
                     musicVolume.addKey(secondKey);
-                    musicVolume.setValueAtKey(firstKey, ap.dbToDec(-10));
-                    musicVolume.setValueAtKey(secondKey, ap.dbToDec(-90));
+                    musicVolume.setValueAtKey(firstKey, ap.dbToDec(-10), updateUI);
+                    musicVolume.setValueAtKey(secondKey, ap.dbToDec(-90), updateUI);
                 }
             }
         } else if (dialogueStart < musicStart && dialogueEnd < musicEnd) {
@@ -784,8 +824,8 @@ ActiveProject.prototype.autoDuck = function() {
             if (firstKey && secondKey) {
                 musicVolume.addKey(firstKey);
                 musicVolume.addKey(secondKey);
-                musicVolume.setValueAtKey(firstKey, ap.dbToDec(-90));
-                musicVolume.setValueAtKey(secondKey, ap.dbToDec(-10));
+                musicVolume.setValueAtKey(firstKey, ap.dbToDec(-90), updateUI);
+                musicVolume.setValueAtKey(secondKey, ap.dbToDec(-10), updateUI);
             }
         } else if (dialogueStart > musicStart && dialogueEnd < musicEnd) {
             if (dialogueStart !== prevClipEnd) {
@@ -795,8 +835,8 @@ ActiveProject.prototype.autoDuck = function() {
                 if (firstKey && secondKey) {
                     musicVolume.addKey(firstKey);
                     musicVolume.addKey(secondKey);
-                    musicVolume.setValueAtKey(firstKey, ap.dbToDec(-10));
-                    musicVolume.setValueAtKey(secondKey, ap.dbToDec(-90));
+                    musicVolume.setValueAtKey(firstKey, ap.dbToDec(-10), updateUI);
+                    musicVolume.setValueAtKey(secondKey, ap.dbToDec(-90), updateUI);
                 }
             }
 
@@ -807,8 +847,8 @@ ActiveProject.prototype.autoDuck = function() {
                 if (thirdKey && fourthKey) {
                     musicVolume.addKey(thirdKey);
                     musicVolume.addKey(fourthKey);
-                    musicVolume.setValueAtKey(thirdKey, ap.dbToDec(-190));
-                    musicVolume.setValueAtKey(fourthKey, ap.dbToDec(-10));
+                    musicVolume.setValueAtKey(thirdKey, ap.dbToDec(-190), updateUI);
+                    musicVolume.setValueAtKey(fourthKey, ap.dbToDec(-10), updateUI);
                 }
             }
             //Social Media Edit has dialogueEnd = musicEnd scenario
@@ -820,9 +860,22 @@ ActiveProject.prototype.autoDuck = function() {
                 if (firstKey && secondKey) {
                     musicVolume.addKey(firstKey);
                     musicVolume.addKey(secondKey);
-                    musicVolume.setValueAtKey(firstKey, ap.dbToDec(-10));
-                    musicVolume.setValueAtKey(secondKey, ap.dbToDec(-90));
+                    musicVolume.setValueAtKey(firstKey, ap.dbToDec(-10), updateUI);
+                    musicVolume.setValueAtKey(secondKey, ap.dbToDec(-90), updateUI);
                 }
+            }
+        }
+    }
+
+    function removeKeyframes(music) {
+        for (var i = 0; i < music.clips.length; i++) {
+            var trackTwoClip = music.clips[i];
+            var musicInPoint = trackTwoClip.inPoint.seconds;
+            var musicOutPoint = trackTwoClip.outPoint.seconds;
+            var musicVolume = trackTwoClip.components[0].properties[1];
+            var isKeyframesOn = musicVolume.isTimeVarying();
+            if (isKeyframesOn) {
+                musicVolume.removeKeyRange(0, 500, updateUI);
             }
         }
     }
