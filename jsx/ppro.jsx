@@ -560,7 +560,7 @@ function addMEWT() {
     }
 
 }
-reframeToVertical();
+
 function reframeToVertical() {
     var ap = new ActiveProject();
     ap.initializeCurrentProject();
