@@ -113,7 +113,7 @@ const main = {
 	resetSelection() {
 		this.runJsxFile("resetSelection")
 			.then(() => {
-				this.selectCounter.innerHTML = 0;
+				this.selectCounter.innerHTML = '0';
 			})
 			.catch(error => {
 				this.handleJsxError(error)
@@ -122,6 +122,7 @@ const main = {
 
 	alignClipsToSocialMediaEdit() {
 		this.runJsxFile("alignClipsToSocialMediaEdit");
+		this.selectCounter.innerHTML = '0';
 	},
 
 	applyEffectsAndTransitionsToSME() {

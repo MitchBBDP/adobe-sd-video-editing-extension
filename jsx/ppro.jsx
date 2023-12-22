@@ -528,15 +528,8 @@ function addMEWT() {
             ap.addTransition(ap.qePreInterviewAClip[i], ap.constantPower, "end", transitionDuration);
         }
 
-        //If there is more than one post-interview clip, add constant power transition in between
-        if (ap.qePostInterviewAClip.length > 1) {
-            var lastIndex = ap.qePostInterviewAClip.length - 1;
-            for (var i = 0; i < lastIndex; i++) {
-                ap.addTransition(ap.qePostInterviewAClip[i], ap.constantPower, "start", transitionDuration);
-            }
-            ap.addTransition(ap.qePostInterviewAClip[lastIndex], ap.constantPower, "both", transitionDuration);
-        } else {
-            ap.addTransition(ap.qePostInterviewAClip[0], ap.constantPower, "both", transitionDuration);
+        for (var i = 0; i < ap.qePostInterviewAClip.length; i++) {
+            ap.addTransition(ap.qePostInterviewAClip[i], ap.constantPower, "start", transitionDuration);
         }
 
         //If there is more than one undercanopy clip, add constant power transition in between
@@ -582,10 +575,6 @@ function reframeToVertical() {
     //Remove all unnecessary clips for Social Media Edit
     removeUnusedClips();
 
-    //Remove all transitions
-    // removeTransitions(ap.qeATrackOne);
-    // removeTransitions(ap.qeVTrackOne);
-
     //Savepoint
     ap.proj.save();
 
@@ -601,20 +590,6 @@ function reframeToVertical() {
         ap.removeClip(ap.preInterviewAClip);
         ap.removeClip(ap.stockOneClip);
         ap.removeClip(ap.stockTwoClip);
-    }
-
-    function removeTransitions(track) {
-        var test = ap.aTrackOne.transitions;
-        var totalTransItems = track.numTransitions;
-        // while (totalTransItems > 1) {
-            // for (var i = 0; i < totalTransItems; i++) {
-            //     var transition = track.getTransitionAt(i);
-            //     if (transition.type === 'Transition') {
-            //         transition.remove();
-            //     }
-            // }
-            // totalTransItems = track.numTransitions;
-        // }
     }
 }
 
@@ -775,6 +750,11 @@ function alignClipsToSocialMediaEdit() {
     ap.socMedTemplateClipsInitialize();
     ap.smMusicClip.end = ap.newTimeObject(60);
 
+    /*Fix the bug that happens when applying transitions. What happens is that we can't put a
+    transition in between adjacent clips for some reason so we need to make sure that intersection
+    time in the timeline is the same*/
+    fixTransitionBug();
+
     //Savepoint
     ap.proj.save();
 
@@ -897,6 +877,27 @@ function alignClipsToSocialMediaEdit() {
             projItem.name = "Montage";
             ap.vTrackOne.overwriteClip(projItem, insertPos);
             projItem.name = projectItemName;
+        }
+    }
+
+    function fixTransitionBug() {
+        //Loop through each clips to make sure the intersection of the adjacent clips are the same
+        for (var i = 0; i < ap.vTrackOne.clips.length; i++) {
+            var prevClip = null;
+            var nextClip = null;
+            var clip = ap.vTrackOne.clips[i];
+            if (i !== 0) {
+                var prevClip = ap.vTrackOne.clips[i - 1];
+            }
+            if (i !== ap.vTrackOne.clips.length - 1) {
+                var nextClip = ap.vTrackOne.clips[i + 1];
+            }
+            if (prevClip && clip.name.toLowerCase().indexOf("freefall") === -1) {
+                clip.start = prevClip.end;
+            }
+            if (nextClip && clip.name.toLowerCase().indexOf("walktoplane") === -1) {
+                clip.end = nextClip.start;
+            }
         }
     }
 }
