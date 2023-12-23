@@ -278,6 +278,13 @@ function applyTwixtor() {
     ap.initializeQEProject();
     ap.activeQESeqAndTracksInitialize();
 
+    //Confirm selection
+    var isSelectionExist = verifySelected();
+    if (!isSelectionExist) {
+        alert("Select one freefall clip", "Error: Invalid Selection", true);
+        return;
+    }
+
     //Make a one second slice at the playhead
     ap.sliceOneSecond();
 
@@ -286,9 +293,9 @@ function applyTwixtor() {
     (1) extendTwixtorClip getting blocked
     (2) twixtor effect not applying to the correct clip
     (3) Source monitor displays the start of the video after applying twixtor*/
-    $.sleep(25);
+    $.sleep(100);
     ap.movePlayheadByFrames(-15);
-    $.sleep(25);
+    $.sleep(100);
 
     //Get the twixtor clip
     var twixtorClip = ap.seq.getSelection()[0];
@@ -310,6 +317,17 @@ function applyTwixtor() {
     // ----------------------------------------------------------------------------------------- //
     // --------------------------------- Apply Twixtor Functions ------------------------------- //
     // ----------------------------------------------------------------------------------------- //
+
+    function verifySelected() {
+        var selection = ap.seq.getSelection();
+        if (selection.length !== 1) {
+            return false;
+        } else if (selection[0].name.toLowerCase().indexOf("freefall") === -1) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
     function moveClipsForTwixtor(timeToMove) {
         var playheadPosSec = ap.seq.getPlayerPosition().seconds;
@@ -1163,6 +1181,45 @@ function autoDuckMusic() {
     ap.activeSeqAndTracksInitialize();
 
     ap.autoDuck();
+}
+copyPhotosToNas();
+function copyPhotosToNas() {
+    var ap = new ActiveProject();
+    ap.initializeCurrentProject();
+
+    //Get the file path object of the txt database
+    var settingsDb = ap.getSettingsDb();
+
+    if (!settingsDb) {
+        alert("Cannot locate settings.txt", "Error: Missing File", true);
+        return;
+    }
+
+    var settings = ap.getSettingsArray();
+
+    ap.readTxtFile(settingsDb, settings);
+
+    var nasFolder = new Folder(settings.nas_path);
+
+    var parentFolder = ap.getParentFolder();
+    
+    var photosFolders = [];
+    var defaultPhotoFolder = parentFolder.getFiles("???GOPRO");
+    var renamedPhotoFolder = parentFolder.getFiles("?hoto?");
+    for (var i = 0; i < defaultPhotoFolder.length; i++) {
+        photosFolders.push(new Folder(defaultPhotoFolder[i]));
+    }
+
+    for (var i = 0; i < renamedPhotoFolder.length; i++) {   
+        photosFolders.push(new Folder(renamedPhotoFolder[i]));
+    }
+
+    for (var i = 0; i < photosFolders.length; i++) {
+        var photosFolder = photosFolders[i];
+        photosFolder.rename("Photos");
+        ap.recursiveCopy(photosFolder[i], nasFolder);
+    }
+
 }
 
 function sequenceChangeListener() {

@@ -272,3 +272,12 @@ body {
     margin-right: 5px;
     margin-left: 5px;
 }
+
+.settingsContainer {
+    display: flex;
+    flex-direction: column;
+    margin-right: 10px;
+    height: 100%;
+    width: 100%;
+    vertical-align: middle;
+}

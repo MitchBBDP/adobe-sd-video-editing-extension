@@ -28,9 +28,13 @@ function copyDefaultFolder(destFolderObj) {
     var srcFolder = extParentFolder + "/" + "SD Extension Presets";
     var srcFolderObj = new Folder(srcFolder);
 
+    // Copy the contents of the src folder to the destination folder
+    var success = copyItems(srcFolderObj, destFolderObj);
+    return success;
+
     // Recursive function to copy files and folders
-    try {
-        function copyItems(src, destination) {
+    function copyItems(src, destination) {
+        try {
             var srcChildren = src.getFiles();
             for (var i = 0; i < srcChildren.length; i++) {
                 var srcChild = srcChildren[i];
@@ -45,12 +49,9 @@ function copyDefaultFolder(destFolderObj) {
                     copyItems(srcChild, destinationChildFolder);
                 }
             }
+            return 1;
+        } catch (e) {
+            return 0;
         }
-    } catch (e) {
-        return 0;
     }
-
-    // Copy the contents of the src folder to the destination folder
-    copyItems(srcFolderObj, destFolderObj);
-    return 1;
 }

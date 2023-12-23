@@ -408,7 +408,7 @@ ActiveProject.prototype.alignClipsToTime = function(clip, startPos, endPos) {
 
         if (clip.duration.seconds > originalDuration) {
             clip.inPoint = this.newTimeObject(0);
-            clip.end = maxClipEnd;
+            clip.end = this.newTimeObject(clip.start.seconds + originalDuration);
         }
     }
 };
@@ -675,6 +675,21 @@ ActiveProject.prototype.getSelectedClipsDb = function() {
     return new File(dbPath);
 };
 
+//Get the Settings Text Database
+ActiveProject.prototype.getSettingsDb = function() {
+    var srcFolder = this.getSrcFolder();
+    var dbPath = srcFolder + "/" + "settings.txt"
+    return new File(dbPath);
+};
+
+//Get the Settings Array Variable
+ActiveProject.prototype.getSettingsArray = function() {
+    return {
+        nas_path : [],
+        sme_undercanopy_audio: []
+    }
+};
+
 ActiveProject.prototype.readTxtFile = function(file, keyArray) {
     if (file.exists) {
         file.open("r");
@@ -878,6 +893,28 @@ ActiveProject.prototype.autoDuck = function() {
                 musicVolume.removeKeyRange(0, 500, updateUI);
             }
         }
+    }
+};
+
+ActiveProject.prototype.recursiveCopy = function(src, destination) {
+    try {
+        var srcChildren = src.getFiles();
+        for (var i = 0; i < srcChildren.length; i++) {
+            var srcChild = srcChildren[i];
+            var destinationChildStr = destination + "/" + srcChild.name;
+            if (srcChild instanceof File) {
+                srcChild.copy(destinationChildStr);
+            } else {
+                var destinationChildFolder = new Folder(destinationChildStr);
+                if (!destinationChildFolder.exists) {
+                    destinationChildFolder.create();
+                }
+                recursiveCopy(srcChild, destinationChildFolder);
+            }
+        }
+        return 1;
+    } catch (e) {
+        return 0;
     }
 };
 
