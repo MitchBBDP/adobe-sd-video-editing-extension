@@ -165,7 +165,7 @@ body {
     text-overflow: clip;
 }
 
-.smeSubButtons{
+.smeSubButtons {
     height: 50%;
     width: auto;
     display: flex;
@@ -259,7 +259,7 @@ body {
 .miscButtons {
     display: flex;
     position: relative;
-    bottom: 5px; 
+    bottom: 5px;
     width: 100%;
     padding-right: 15px;
     padding-left: 15px;
@@ -273,11 +273,37 @@ body {
     margin-left: 5px;
 }
 
-.settingsContainer {
-    display: flex;
-    flex-direction: column;
+.menuButtons {
     margin-right: 10px;
-    height: 100%;
-    width: 100%;
-    vertical-align: middle;
+}
+
+.menuButton {
+    font-size: 2.5vw;
+}
+
+.buttonSettings {
+    width: 12%;
+    height: 15%;
+    position: absolute;
+    bottom: 3vw;
+    right: 1vw;
+}
+
+.settingsSpan {
+    font-size: 3vw;
+}
+
+.settingsOption {
+    display: flex;
+    font-size: 3vw;
+}
+
+.settingsRadio {
+    margin-right: 0.5vw;
+    margin-left: 0.8vw;
+}
+
+.settingsDiv {
+    display: flex;
+    flex-direction: row;
 }

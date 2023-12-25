@@ -400,6 +400,8 @@ function addMEWT() {
     //Add the music file to the track
     var isMusicAdded = addMusic();
     if (!isMusicAdded) {
+        app.sourceMonitor.openProjectItem(ap.fhdMusic);
+        app.sourceMonitor.play(1);
         return;
     }
 
@@ -437,7 +439,7 @@ function addMEWT() {
             var musicOutPoint = musicDrop.seconds + 1;
             ap.setInAndOut(ap.fhdMusic, musicInPoint, musicOutPoint);
         } else {
-            alert("Music file has no marker at the drop", "Error: Marker Not Found", true);
+            alert("Music file has no marker at the drop. Add a marker in the source monitor.", "Error: Marker Not Found", true);
             return null;
         }
 
@@ -733,6 +735,17 @@ function alignClipsToSocialMediaEdit() {
     ap.initializeCurrentProject();
     ap.activeSeqAndTracksInitialize();
 
+    var undercanopyAudioSettings = getUndercanopyAudioSettings();
+    if (!undercanopyAudioSettings) {
+        return;
+    } else {
+        if (undercanopyAudioSettings === "true") {
+            undercanopyAudioSettings = true;
+        } else {
+            undercanopyAudioSettings = false;
+        }
+    }
+
     var selectedClipsDb = ap.getSelectedClipsDb();
     var clipId = ap.getClipIdFromDb(selectedClipsDb);
 
@@ -838,7 +851,11 @@ function alignClipsToSocialMediaEdit() {
         ap.removeExcessSocMedClips(ap.smPostInterviewAClip, 1);
         ap.removeExcessSocMedClips(ap.smHandicamViewVClip, 1);
         ap.removeExcessSocMedClips(ap.smUnderCanopyVClip, 1);
-        ap.removeExcessSocMedClips(ap.smUnderCanopyAClip, 1);
+        if (undercanopyAudioSettings === true) {
+            ap.removeExcessSocMedClips(ap.smUnderCanopyAClip, 1);
+        } else {
+            ap.removeExcessSocMedClips(ap.smUnderCanopyAClip, 0);
+        }
 
         //Re-initialize the clips variables
         ap.socMedVClipsInitialize();
@@ -895,6 +912,23 @@ function alignClipsToSocialMediaEdit() {
             projItem.name = "Montage";
             ap.vTrackOne.overwriteClip(projItem, insertPos);
             projItem.name = projectItemName;
+        }
+    }
+
+    function getUndercanopyAudioSettings() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return;
+        }
+        var settings = ap.getSettingsArray(settingsDb);
+
+        var isIncludeCanopyAudio = settings.sme_undercanopy_audio[0];
+
+        if (!isIncludeCanopyAudio) {
+            alert("No option selected for sme_undercanopy_audio", "Error: Incomplete Settings", true);
+            return null;
+        } else {
+            return isIncludeCanopyAudio;
         }
     }
 
@@ -1117,14 +1151,22 @@ function renderProject(sequenceType) {
     }
 
     function renderFreefallInAME() {
+        ap.vTrackOneClipsInitialize();
+
         var isEncoded = null;
+        var firstFreefallClip = ap.freefallVClip[0];
+        var lastFreefallClip = ap.freefallVClip[ap.freefallVClip.length - 1];
+        if (!firstFreefallClip) {
+            return;
+        }
         var freefall = getFreefallProjectItem();
+        ap.setInAndOut(freefall, firstFreefallClip.inPoint.seconds, lastFreefallClip.outPoint.seconds);
 
         if (freefall) {
             var photosFolderName = "Photos";
             var photosFolder = ap.createPhotosFolder(photosFolderName);
-            var renderPath = photosFolder.fsName + "\\" + "G001000.jpg";
-            isEncoded = ap.encoder.encodeProjectItem(freefall, renderPath, miPreset, 0, 1);
+            var renderPath = photosFolder.fsName + "\\" + "G0010.jpg";
+            isEncoded = ap.encoder.encodeProjectItem(freefall, renderPath, miPreset, 1, 1);
             app.encoder.startBatch();
         }
 
@@ -1156,14 +1198,22 @@ function renderProject(sequenceType) {
 
         var photosFolderName = "Photos";
         var photosFolder = ap.createPhotosFolder(photosFolderName);
-        var renderPath = photosFolder.fsName + "\\" + "G0010000.jpg";
 
+        var rendered = false;
+        var renderPath = null;
+        var fileCounter = 0;
 
-
-
-        //need iconfirm kung may marerender ba
-        // napapalitan yugn rendered photo kapag nag render uelt kasi same name
-
+        /*Prevents AME from overwriting the screenshot if the same filename exist.
+        For some reason, AME overwrites the file for single screenshots and not multiple render*/
+        while (!rendered) {
+            renderPath = photosFolder.fsName + "\\" + "GXS100" + fileCounter + ".jpg";
+            var filePath = photosFolder.fsName + "\\" + "GXS100" + fileCounter + "0" + ".jpg";
+            var file = new File(filePath);
+            if (!file.exists) {
+                var rendered = true;
+            }
+            fileCounter++;
+        }
 
         isEncoded = ap.encoder.encodeSequence(ap.seq, renderPath, siPreset, 1, 1);
         app.encoder.startBatch();
@@ -1182,46 +1232,206 @@ function autoDuckMusic() {
 
     ap.autoDuck();
 }
-copyPhotosToNas();
+
 function copyPhotosToNas() {
     var ap = new ActiveProject();
     ap.initializeCurrentProject();
 
-    //Get the file path object of the txt database
-    var settingsDb = ap.getSettingsDb();
+    var nasFolder = getNasFolder();
+    var nasChildren = nasFolder.getFiles();
+    var tandemFolder = getTandemFolderNas(nasChildren);
 
-    if (!settingsDb) {
-        alert("Cannot locate settings.txt", "Error: Missing File", true);
+    if (!tandemFolder) {
+        alert("Tandem Folder in NAS not found", "Error: Folder not detected", true);
         return;
     }
 
-    var settings = ap.getSettingsArray();
-
-    ap.readTxtFile(settingsDb, settings);
-
-    var nasFolder = new Folder(settings.nas_path);
+    var tandemNasPhotoFolder = ap.createNasPhotosFolder(tandemFolder);
 
     var parentFolder = ap.getParentFolder();
-    
     var photosFolders = [];
     var defaultPhotoFolder = parentFolder.getFiles("???GOPRO");
     var renamedPhotoFolder = parentFolder.getFiles("?hoto?");
-    for (var i = 0; i < defaultPhotoFolder.length; i++) {
-        photosFolders.push(new Folder(defaultPhotoFolder[i]));
+
+    getPhotoFolders(defaultPhotoFolder);
+    getPhotoFolders(renamedPhotoFolder);
+    var success = copyToNas(photosFolders, tandemNasPhotoFolder);
+
+    if (success) {
+        ap.updateEventPanel("success", "Photos copied to NAS Successfully");
     }
 
-    for (var i = 0; i < renamedPhotoFolder.length; i++) {   
-        photosFolders.push(new Folder(renamedPhotoFolder[i]));
+    // ----------------------------------------------------------------------------------------- //
+    // --------------------------------- Copy Photos to NAS Functions -------------------------- //
+    // ----------------------------------------------------------------------------------------- //
+
+    function getNasFolder() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return;
+        }
+        var settings = ap.getSettingsArray(settingsDb);
+
+        return new Folder(settings.nas_path[0]);
     }
 
-    for (var i = 0; i < photosFolders.length; i++) {
-        var photosFolder = photosFolders[i];
-        photosFolder.rename("Photos");
-        ap.recursiveCopy(photosFolder[i], nasFolder);
+    function getTandemFolderNas(nasFolder) {
+        var customerName = ap.getCustomerName();
+        var tandemFolder = null;
+        for (var i = 0; i < nasFolder.length; i++) {
+            // alert(nasFolder[i].displayName + customerName);
+            if (customerName.toLowerCase().indexOf(nasFolder[i].displayName.toLowerCase()) !== -1) {
+                tandemFolder = nasFolder[i];
+            }
+        }
+
+        return tandemFolder;
     }
 
+    function getPhotoFolders(folders) {
+        for (var i = 0; i < folders.length; i++) {
+            var photoFolder = folders[i];
+            if (photoFolder instanceof Folder) {
+                photosFolders.push(new Folder(photoFolder));
+            }
+        }
+    }
+
+    function copyToNas(folders, tandemPhotoFolderInNas) {
+        for (var i = 0; i < folders.length; i++) {
+            var photosFolder = folders[i];
+            photosFolder.rename("Photos");
+            var success = ap.recursiveCopy(photosFolder, tandemPhotoFolderInNas);
+            if (!success) {
+                alert("Error Copying Photos", "Error: Copy Files Error", true);
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
 }
 
+/*Settings Buttons*/
+function changeMusic() {
+    var ap = new ActiveProject();
+    ap.initializeCurrentProject();
+
+    var srcFolder = ap.getSrcFolder();
+    var stockFolder = new Folder(srcFolder + "/fhd");
+
+    var fhdTemplates = stockFolder.getFiles();
+    var musicFile = null;
+
+    for (var i = 0; i < fhdTemplates.length; i++) {
+        var file = fhdTemplates[i];
+        if (file.displayName.toLowerCase().indexOf("music") !== -1) {
+            musicFile = file;
+        }
+    }
+
+    if (!musicFile) {
+        alert("Music File Not Detected", "Error: Missing Media", true);
+        return;
+    }
+
+    var newMusic = File.openDialog("Choose Music File", "*.mp3", false);
+    var newMusicName = newMusic.displayName;
+
+    if (!newMusic) {
+        return;
+    } else {
+        var fileCopied = newMusic.copy(stockFolder + "/" + newMusicName);
+        if (fileCopied) {
+            var fhdTemplates = stockFolder.getFiles();
+            for (var i = 0; i < fhdTemplates.length; i++) {
+                var file = fhdTemplates[i];
+                if (newMusicName === file.displayName) {
+                    file.rename("9B - Music - " + file.displayName);
+                }
+            }
+            musicFile.remove();
+        }
+    }
+}
+
+
+function selectNas() {
+    var ap = new ActiveProject();
+    ap.initializeCurrentProject();
+
+    var settingsDb = ap.getSettingsDb();
+    if (!settingsDb) {
+        return;
+    }
+    var settings = ap.getSettingsArray(settingsDb);
+
+
+    var nasPath = settings.nas_path[0];
+    var prevNasFolder = null;
+
+    if (nasPath) {
+        prevNasFolder = new Folder(nasPath);
+    } else {
+        prevNasFolder = Folder.desktop;
+    }
+
+    var currNasFolder = prevNasFolder.selectDlg("Select NAS Folder");
+
+    if (currNasFolder) {
+        settings.nas_path = [currNasFolder];
+        ap.writeTxtFile(settingsDb, settings);
+    } else {
+        return;
+    }
+}
+
+function setBoolSettings(setting, selection) {
+    var ap = new ActiveProject();
+    ap.initializeCurrentProject();
+
+    var settingsDb = ap.getSettingsDb();
+    if (!settingsDb) {
+        return;
+    }
+    var settings = ap.getSettingsArray(settingsDb);
+
+    if (setting === "canopyAudio") {
+        settings.sme_undercanopy_audio[0] = selection;
+    } else if (setting === "oneFrame") {
+        settings.one_frame_select[0] = selection;
+    } else if (setting === "proxy") {
+        settings.enable_proxy[0] = selection;
+    } else if (setting === "autoDeleteMedia") {
+        settings.auto_delete_original_media[0] = selection;
+    }
+
+    ap.writeTxtFile(settingsDb, settings);
+}
+
+function getBoolSettings(setting) {
+    var ap = new ActiveProject();
+    ap.initializeCurrentProject();
+
+    var settingsDb = ap.getSettingsDb();
+    if (!settingsDb) {
+        return;
+    }
+
+    var settings = ap.getSettingsArray(settingsDb);
+
+    if (setting === "canopyAudio") {
+        return settings.sme_undercanopy_audio[0];
+    } else if (setting === "oneFrame") {
+        return settings.one_frame_select[0];
+    } else if (setting === "proxy") {
+        return settings.enable_proxy[0];
+    } else if (setting === "autoDeleteMedia") {
+        return settings.auto_delete_original_media[0];
+    }
+}
+
+/*Event Listeners*/
 function sequenceChangeListener() {
     app.bind('onSequenceActivated', mySequenceActivatedFxn);
     // app.unbind('onSequenceActivated', mySequenceActivatedFxn);

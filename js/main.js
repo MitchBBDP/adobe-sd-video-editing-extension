@@ -13,9 +13,23 @@ const main = {
 	fhdRenderProjectButton: document.getElementById("fhd-render-button"),
 	smeRenderProjectButton: document.getElementById("sme-render-button"),
 	allRenderProjectButton: document.getElementById("all-render-button"),
-	imageRenderProjectButton: document.getElementById("export-frame-button"),
+	singleScreenshotButton: document.getElementById("single-screenshot-button"),
+	freefallScreenshotButton: document.getElementById("freefall-screenshot-button"),
 	fhdDuckButton: document.getElementById("fhd-duck-button"),
 	smeDuckButton: document.getElementById("sme-duck-button"),
+	nasCopyButon: document.getElementById("copy-photos-button"),
+	selectNasButton: document.getElementById("nas-button"),
+	changeMusicButton: document.getElementById("change-music-button"),
+	canopyAudioYesButton: document.getElementById("undercanopyYes"),
+	canopyAudioNoButton: document.getElementById("undercanopyNo"),
+	oneFrameYesButton: document.getElementById("oneFrameYes"),
+	oneFrameNoButton: document.getElementById("oneFrameNo"),
+	proxyYesButton: document.getElementById("proxyYes"),
+	proxyNoButton: document.getElementById("proxyNo"),
+	autoDeleteMediaYesButton: document.getElementById("autoDeleteMediaYes"),
+	autoDeleteMediaNoButton: document.getElementById("autoDeleteMediaNo"),
+	openSettingsButton: document.getElementById("openSettings"),
+	closeSettingsButton: document.getElementById("closeSettings"),
 	homeTab: document.getElementById('homeTab'),
 	homeTabButtons: document.getElementById('homeButtonHolder'),
 	fhdTab: document.getElementById('fhdTab'),
@@ -24,6 +38,8 @@ const main = {
 	smeTabButtons: document.getElementById('smeButtonHolder'),
 	settingsTab: document.getElementById('settingsTab'),
 	settingsTabButtons: document.getElementById('settingsButtonHolder'),
+	settingsContainer: document.getElementById('settingsContainer'),
+	menuContainer: document.getElementById('menuContainer'),
 	boardCheck: document.getElementById('hasBoard'),
 	boardLabel: document.getElementById('hasBoardLabel'),
 	selectCounter: document.getElementById('select-counter'),
@@ -138,6 +154,63 @@ const main = {
 		this.runJsxFile("autoDuckMusic");
 	},
 
+	copyPhotosToNas() {
+		this.runJsxFile("copyPhotosToNas");
+	},
+
+	selectNas() {
+		this.runJsxFile("selectNas");
+	},
+
+	changeMusic() {
+		this.runJsxFile("changeMusic");
+	},
+
+	setBoolSettings(setting, selection) {
+		this.runJsxFile("setBoolSettings", setting, selection);
+	},
+
+	getBoolSettings(setting) {
+		this.runJsxFile("getBoolSettings", setting)
+		.then(result => {
+			if (setting === "canopyAudio") {
+				if (result === "true") {
+					this.canopyAudioYesButton.checked = true;
+				} else if (result === "false") {
+					this.canopyAudioNoButton.checked = true;
+				}
+			} else if (setting === "oneFrame") {
+				if (result === "true") {
+					this.oneFrameYesButton.checked = true;
+				} else if (result === "false") {
+					this.oneFrameNoButton.checked = true;
+				}
+			} else if (setting === "proxy") {
+				if (result === "true") {
+					this.proxyYesButton.checked = true;
+				} else if (result === "false") {
+					this.proxyNoButton.checked = true;
+				}
+			} else if (setting === "autoDeleteMedia") {
+				if (result === "true") {
+					this.autoDeleteMediaYesButton.checked = true;
+				} else if (result === "false") {
+					this.autoDeleteMediaNoButton.checked = true;
+				}
+			}
+		})
+		.catch(error => {
+			this.handleJsxError(error)
+		});
+	},
+
+	setSettingsUI() {
+		this.getBoolSettings("canopyAudio");
+		this.getBoolSettings("oneFrame");
+		this.getBoolSettings("proxy");
+		this.getBoolSettings("autoDeleteMedia");
+	},
+
 	runSequenceChangeEvent() {
 		this.runJsxFile("sequenceChangeListener");
 	},
@@ -151,14 +224,14 @@ const main = {
 	},
 
 	autoSwitchTabs(sequenceName) {
-        if (sequenceName.indexOf("- FullHD") !== -1) {
-            this.showTabButtons(this.fhdTabButtons, this.fhdTab);
-        } else if (sequenceName.indexOf("- SocialMediaEdit") !== -1) {
-            this.showTabButtons(this.smeTabButtons, this.smeTab);
-        } else {
+		if (sequenceName.indexOf("- FullHD") !== -1) {
+			this.showTabButtons(this.fhdTabButtons, this.fhdTab);
+		} else if (sequenceName.indexOf("- SocialMediaEdit") !== -1) {
+			this.showTabButtons(this.smeTabButtons, this.smeTab);
+		} else {
 			this.showTabButtons(this.homeTabButtons, this.homeTab);
 		}
-    },
+	},
 
 	//Validate user input for the tandem name to avoid errors
 	//****Must have more than three words
@@ -214,7 +287,22 @@ const main = {
 		this.settingsTabButtons.classList.replace("d-flex", "d-none");
 		buttons.classList.replace("d-none", "d-flex");
 		tab.focus();
+
+		if (buttons === this.settingsTabButtons) {
+			this.closeSettingsContainer();
+		}
 	},
+
+	openSettingsContainer() {
+		this.settingsContainer.classList.replace("d-none", "d-flex");
+		this.menuContainer.classList.replace("d-flex", "d-none");
+	},
+
+	closeSettingsContainer() {
+		this.menuContainer.classList.replace("d-none", "d-flex");
+		this.settingsContainer.classList.replace("d-flex", "d-none");
+	},
+
 
 	/*Changes the inner text of the switch label */
 	boardSwitch(checkbox, label) {
@@ -239,10 +327,35 @@ const main = {
 		this.handleButtonClick(this.effectsAndTransitionSMEButton, () => this.applyEffectsAndTransitionsToSME());
 		this.handleButtonClick(this.fhdDuckButton, () => this.autoDuckMusic());
 		this.handleButtonClick(this.smeDuckButton, () => this.autoDuckMusic());
+		this.handleButtonClick(this.nasCopyButon, () => this.copyPhotosToNas());
+		this.handleButtonClick(this.selectNasButton, () => this.selectNas());
+		this.handleButtonClick(this.changeMusicButton, () => this.changeMusic());
 		this.handleButtonClick(this.fhdRenderProjectButton, () => this.renderProject("fhd"));
 		this.handleButtonClick(this.smeRenderProjectButton, () => this.renderProject("sme"));
 		this.handleButtonClick(this.allRenderProjectButton, () => this.renderProject("all"));
-		this.handleButtonClick(this.imageRenderProjectButton, () => this.renderProject("image"));
+		this.handleButtonClick(this.singleScreenshotButton, () => this.renderProject("image"));
+		this.handleButtonClick(this.freefallScreenshotButton, () => this.renderProject("freefall"));
+		
+		this.canopyAudioYesButton.addEventListener("click", () => this.setBoolSettings("canopyAudio", true));
+		this.canopyAudioNoButton.addEventListener("click", () => this.setBoolSettings("canopyAudio", false));
+		this.oneFrameYesButton.addEventListener("click", () => this.setBoolSettings("oneFrame", true));
+		this.oneFrameNoButton.addEventListener("click", () => this.setBoolSettings("oneFrame", false));
+		this.proxyYesButton.addEventListener("click", () => this.setBoolSettings("proxy", true));
+		this.proxyNoButton.addEventListener("click", () => this.setBoolSettings("proxy", false));
+		this.autoDeleteMediaYesButton.addEventListener("click", () => this.setBoolSettings("autoDeleteMedia", true));
+		this.autoDeleteMediaNoButton.addEventListener("click", () => this.setBoolSettings("autoDeleteMedia", false));
+
+		//Handles misc UI event listeners
+		this.homeTab.addEventListener("click", () => this.showTabButtons(this.homeTabButtons, this.homeTab));
+		this.fhdTab.addEventListener("click", () => this.showTabButtons(this.fhdTabButtons, this.fhdTab));
+		this.smeTab.addEventListener("click", () => this.showTabButtons(this.smeTabButtons, this.smeTab));
+		this.settingsTab.addEventListener("click", () => this.showTabButtons(this.settingsTabButtons, this.settingsTab));
+		this.boardCheck.addEventListener("change", () => this.boardSwitch(this.boardCheck, this.boardLabel));
+		this.openSettingsButton.addEventListener("click", () => this.openSettingsContainer());
+		this.closeSettingsButton.addEventListener("click", () => this.closeSettingsContainer());
+		this.runSequenceChangeEvent();
+		this.addSequenceChangeListener();
+		this.setSettingsUI();
 
 		//Handles enter key press while writing tandem name
 		this.tandemNameInput.addEventListener("keydown", (event) => {
@@ -251,15 +364,6 @@ const main = {
 				this.createNewProject();
 			}
 		});
-
-		//Handles misc UI event listeners
-		this.homeTab.addEventListener("click", () => this.showTabButtons(this.homeTabButtons, this.homeTab));
-		this.fhdTab.addEventListener("click", () => this.showTabButtons(this.fhdTabButtons, this.fhdTab));
-		this.smeTab.addEventListener("click", () => this.showTabButtons(this.smeTabButtons, this.smeTab));
-		this.settingsTab.addEventListener("click", () => this.showTabButtons(this.settingsTabButtons, this.settingsTab));
-		this.boardCheck.addEventListener("change", () => this.boardSwitch(this.boardCheck, this.boardLabel));
-		this.runSequenceChangeEvent();
-		this.addSequenceChangeListener();
 
 		document.addEventListener("contextmenu", function (event) {
 			event.preventDefault();

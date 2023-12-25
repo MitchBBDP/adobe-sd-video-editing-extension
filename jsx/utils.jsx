@@ -451,6 +451,18 @@ ActiveProject.prototype.trimInAndOutPoint = function(bin) {
     }
 };
 
+ActiveProject.prototype.getCustomerName = function() {
+    var projectName = this.proj.name;
+
+    //Exclude the file extension
+    var splitFromExtension = projectName.split(".");
+
+    //Separate by space and get only the third word onward
+    var splitFromSpaces = splitFromExtension[0].split(" ");
+    
+    return splitFromSpaces.slice(2).join(" ");
+};
+
 ActiveProject.prototype.getClipDuration = function(clip) {
     var totalClipDuration = 0;
     if (clip instanceof Array) {
@@ -641,6 +653,17 @@ ActiveProject.prototype.createPhotosFolder = function(folderName) {
     }
 };
 
+//Create photos folder inside the NAS tandem folder
+ActiveProject.prototype.createNasPhotosFolder = function(folder) {
+    var photosFolder = new Folder(folder + "/" + "Photos");
+    if (photosFolder.exists) {
+        return photosFolder;
+    } else {
+        photosFolder.create();
+        return photosFolder;
+    }
+};
+
 //Copy selected files to designated subfolder
 ActiveProject.prototype.copyFilesToSubFolder = function(files, folderName) {
     //Create sub-folder
@@ -679,15 +702,28 @@ ActiveProject.prototype.getSelectedClipsDb = function() {
 ActiveProject.prototype.getSettingsDb = function() {
     var srcFolder = this.getSrcFolder();
     var dbPath = srcFolder + "/" + "settings.txt"
-    return new File(dbPath);
+    var settingsDb = new File(dbPath);
+    if (!settingsDb.exists) {
+        alert("Cannot locate settings.txt", "Error: Missing File", true);
+        return null;
+    } else {
+        return settingsDb;
+    }
 };
 
 //Get the Settings Array Variable
-ActiveProject.prototype.getSettingsArray = function() {
-    return {
+ActiveProject.prototype.getSettingsArray = function(db) {
+    //Get the file path object of the txt database
+    var settingsArray = {
         nas_path : [],
-        sme_undercanopy_audio: []
-    }
+        sme_undercanopy_audio: [],
+        one_frame_select: [],
+        enable_proxy: [],
+        auto_delete_original_media: []
+        }
+        
+        this.readTxtFile(db, settingsArray);
+        return settingsArray;
 };
 
 ActiveProject.prototype.readTxtFile = function(file, keyArray) {
@@ -916,6 +952,15 @@ ActiveProject.prototype.recursiveCopy = function(src, destination) {
     } catch (e) {
         return 0;
     }
+};
+
+ActiveProject.prototype.updateEventPanel = function(state, message) {
+    if (state === "success") {
+        app.setSDKEventMessage(message, "info");
+    } else if (state === "error") {
+        app.setSDKEventMessage(message, "error");
+        // app.setSDKEventMessage('Here is a warning.', 'warning');
+    } 
 };
 
 //------------------------------------------------------------------------//
