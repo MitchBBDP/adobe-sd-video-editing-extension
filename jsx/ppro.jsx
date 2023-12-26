@@ -42,6 +42,11 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     //Copy Files in a new folder inside the tandem folder
     var videosFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
 
+    //Cancel the operation if file copy is unsucessful
+    if (!videosFolder) {
+        return;
+    }
+
     //Import Copied Files to PrProj
     ap.importToProject(videosFolder.getFiles(), ap.vidBin);
 
@@ -109,6 +114,14 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     var copyrightsStartTime = outroClip.end.seconds - 8;
     var copyrightClip = insertMogrts(copyrightsMogrtFile, copyrightsStartTime);
     copyrightClip.end = outroClip.end;
+
+    //Delete original selected media if it is enabled in the settings
+    var isAutoDeleteOriginalMediaOn = autoDeleteOriginalMediaFHD();
+    if (isAutoDeleteOriginalMediaOn) {
+        for (var i = 0; i < fileSelected.length; i++) {
+            fileSelected[i].remove();
+        }
+    }
 
     //Savepoint
     ap.proj.save();
@@ -183,6 +196,20 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
         var mogrtClip = ap.seq.importMGT(mogrtFile.fsName, startTime, 3, 0);
         return mogrtClip;
     }
+
+    function autoDeleteOriginalMediaFHD() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.auto_delete_original_media[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 
@@ -235,6 +262,14 @@ function insertHandicam() {
     //Insert the handicam freefall at the end of the video
     insertHCFreefall();
 
+    //Delete original selected media if it is enabled in the settings
+    var isAutoDeleteOriginalMediaOn = autoDeleteOriginalMediaHC();
+    if (isAutoDeleteOriginalMediaOn) {
+        for (var i = 0; i < fileSelected.length; i++) {
+            fileSelected[i].remove();
+        }
+    }
+
     //Savepoint
     ap.proj.save();
 
@@ -268,6 +303,19 @@ function insertHandicam() {
         ap.moveClipsAfterTime(freefallEndSec, underCanopyDuration, true);
     }
 
+    function autoDeleteOriginalMediaHC() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.auto_delete_original_media[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 function applyTwixtor() {
@@ -286,7 +334,7 @@ function applyTwixtor() {
     }
 
     //Make a one second slice at the playhead
-    ap.sliceOneSecond();
+    ap.sliceBySecond(1);
 
     /*Inserted sleep function to pause the script execution for a very short 
     time to ensure the selecting of clip will not bug out. Known bugs: 
@@ -295,7 +343,7 @@ function applyTwixtor() {
     (3) Source monitor displays the start of the video after applying twixtor*/
     $.sleep(100);
     ap.movePlayheadByFrames(-15);
-    $.sleep(100);
+    $.sleep(500);
 
     //Get the twixtor clip
     var twixtorClip = ap.seq.getSelection()[0];
@@ -617,9 +665,12 @@ function clipSelect() {
     var ap = new ActiveProject();
     ap.initializeCurrentProject();
     ap.activeSeqAndTracksInitialize();
+    ap.initializeQEProject();
+    ap.activeQESeqAndTracksInitialize();
 
     //Get the file path object of the txt database
     var selectedClipsDb = ap.getSelectedClipsDb();
+    var clipsSelected;
 
     /*Check if the current txt database exist so that we can pass the existing values
     into our clipId array if there are prior selections. We read the txt database
@@ -628,7 +679,25 @@ function clipSelect() {
     var previousClipNum = clipId.video.length;
 
     //Get the selected track item/s in an array
-    var clipsSelected = ap.seq.getSelection();
+    /*If One Frame Select is enabled, we perform an operation to slice 3 frames from the playhead position 
+    and get the selected clip if only (1)Multiple Clip is not selected, (2)Twixtor Clip is not selected*/
+    var isOneFrameSelect = oneFrameSelect();
+    clipsSelected = ap.seq.getSelection();
+    if (isOneFrameSelect && clipsSelected.length === 1) {
+        var isTwixtorClip = false;
+        for (var i = 0; i < clipsSelected[0].components.length; i++) {
+            if (clipsSelected[0].components[i].displayName === "Twixtor") {
+                isTwixtorClip = true;
+            }
+        }
+
+        if (!isTwixtorClip) {
+            ap.sliceByFrame(3);
+            ap.movePlayheadByFrames(-1);
+            $.sleep(1000);
+        }
+    }
+    clipsSelected = ap.seq.getSelection();
 
     /*Check if there is a selected clip. We also check the length because for some reason
     the code goes through the if-block even though the selection is undefined.*/
@@ -699,6 +768,20 @@ function clipSelect() {
             return false;
         }
     }
+
+    function oneFrameSelect() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.one_frame_select[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 function decrementSelection() {
@@ -736,15 +819,6 @@ function alignClipsToSocialMediaEdit() {
     ap.activeSeqAndTracksInitialize();
 
     var undercanopyAudioSettings = getUndercanopyAudioSettings();
-    if (!undercanopyAudioSettings) {
-        return;
-    } else {
-        if (undercanopyAudioSettings === "true") {
-            undercanopyAudioSettings = true;
-        } else {
-            undercanopyAudioSettings = false;
-        }
-    }
 
     var selectedClipsDb = ap.getSelectedClipsDb();
     var clipId = ap.getClipIdFromDb(selectedClipsDb);
@@ -918,18 +992,19 @@ function alignClipsToSocialMediaEdit() {
     function getUndercanopyAudioSettings() {
         var settingsDb = ap.getSettingsDb();
         if (!settingsDb) {
-            return;
+            return false;
         }
         var settings = ap.getSettingsArray(settingsDb);
 
         var isIncludeCanopyAudio = settings.sme_undercanopy_audio[0];
 
-        if (!isIncludeCanopyAudio) {
-            alert("No option selected for sme_undercanopy_audio", "Error: Incomplete Settings", true);
-            return null;
+        if (isIncludeCanopyAudio === "true") {
+            isIncludeCanopyAudio = true;
         } else {
-            return isIncludeCanopyAudio;
+            isIncludeCanopyAudio = false;
         }
+
+        return isIncludeCanopyAudio;
     }
 
     function fixTransitionBug() {
@@ -1103,6 +1178,7 @@ function renderProject(sequenceType) {
     var smePreset = presetFolder.fsName + "\\" + "IGPreset.epr";
     var miPreset = presetFolder.fsName + "\\" + "MultiImagePreset.epr";
     var siPreset = presetFolder.fsName + "\\" + "SingleImagePreset.epr";
+    var compactPreset = presetFolder.fsName + "\\" + "CompactPreset.epr";
 
     var projectSequences = ap.proj.sequences;
 
@@ -1110,10 +1186,16 @@ function renderProject(sequenceType) {
         var success = renderFreefallInAME();
     } else if (sequenceType === "image") {
         var success = renderFrameInAME();
+    } else if (sequenceType === "report") {
+        var success = renderCompactInAME();
     } else {
         var success = renderSequencesInAME(projectSequences, sequenceType);
         ap.proj.closeDocument(1, 0); //Parameter: (saveFirst, promptUserForChanges)
     }
+
+    // ----------------------------------------------------------------------------------------- //
+    // --------------------------------- Render Project Functions ------------------------------ //
+    // ----------------------------------------------------------------------------------------- //
 
     function renderSequencesInAME(sequences, sequenceType) {
         var isEncoded = null;
@@ -1223,6 +1305,33 @@ function renderProject(sequenceType) {
 
         return isEncoded;
     }
+
+    function renderCompactInAME() {
+        var isEncoded = null;
+
+        var renderFolderName = "Compact Rendered Files";
+        var renderFolder = ap.createRenderFolder(renderFolderName);
+        var renderName = ap.proj.name.split(".")[0];
+        var renderPath = renderFolder.fsName + "\\" + renderName + ".mp4";
+
+        var seqInPoint = ap.seq.getInPoint();
+        var seqOutPoint = ap.seq.getOutPoint();
+        if (seqInPoint === ap.seq.zeroPoint.seconds && seqOutPoint === ap.seq.end.seconds ||
+            seqInPoint <= 0 && seqOutPoint <= 0) {
+            var proceed = confirm("Inpoint and Outpoint is set to the whole sequence. Do you want to continue?", true, "Proceed?");
+            if (!proceed) {
+                return;
+            }
+        }
+
+        isEncoded = ap.encoder.encodeSequence(ap.seq, renderPath, compactPreset, 1, 1);
+        app.encoder.startBatch();
+
+        ap.seq.setInPoint(0);
+        ap.seq.setOutPoint(0);
+
+        return isEncoded;
+    }
 }
 
 function autoDuckMusic() {
@@ -1241,6 +1350,9 @@ function copyPhotosToNas() {
     var nasChildren = nasFolder.getFiles();
     var tandemFolder = getTandemFolderNas(nasChildren);
 
+    if (!nasFolder) {
+        return;
+    }
     if (!tandemFolder) {
         alert("Tandem Folder in NAS not found", "Error: Folder not detected", true);
         return;
@@ -1268,7 +1380,7 @@ function copyPhotosToNas() {
     function getNasFolder() {
         var settingsDb = ap.getSettingsDb();
         if (!settingsDb) {
-            return;
+            return null;
         }
         var settings = ap.getSettingsArray(settingsDb);
 

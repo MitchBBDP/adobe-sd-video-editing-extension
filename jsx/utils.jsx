@@ -459,7 +459,7 @@ ActiveProject.prototype.getCustomerName = function() {
 
     //Separate by space and get only the third word onward
     var splitFromSpaces = splitFromExtension[0].split(" ");
-    
+
     return splitFromSpaces.slice(2).join(" ");
 };
 
@@ -670,11 +670,15 @@ ActiveProject.prototype.copyFilesToSubFolder = function(files, folderName) {
     var destFolder = this.createNewFolder(folderName);
 
     //Copy tandem files to sub-folder
-    for (var i in files) {
-        files[i].copy(destFolder + '/' + files[i].displayName);
+    try {
+        for (var i in files) {
+            files[i].copy(destFolder + '/' + files[i].displayName);
+        }
+        return destFolder;
+    } catch (error) {
+        alert("Copying files failed", "Error: Unsucessful Copy", true);
+        return null;
     }
-
-    return destFolder;
 };
 
 //Declare source folder for templates and presets
@@ -715,15 +719,15 @@ ActiveProject.prototype.getSettingsDb = function() {
 ActiveProject.prototype.getSettingsArray = function(db) {
     //Get the file path object of the txt database
     var settingsArray = {
-        nas_path : [],
+        nas_path: [],
         sme_undercanopy_audio: [],
         one_frame_select: [],
         enable_proxy: [],
         auto_delete_original_media: []
-        }
-        
-        this.readTxtFile(db, settingsArray);
-        return settingsArray;
+    }
+
+    this.readTxtFile(db, settingsArray);
+    return settingsArray;
 };
 
 ActiveProject.prototype.readTxtFile = function(file, keyArray) {
@@ -960,7 +964,7 @@ ActiveProject.prototype.updateEventPanel = function(state, message) {
     } else if (state === "error") {
         app.setSDKEventMessage(message, "error");
         // app.setSDKEventMessage('Here is a warning.', 'warning');
-    } 
+    }
 };
 
 //------------------------------------------------------------------------//
@@ -1117,12 +1121,18 @@ ActiveProject.prototype.razorAtVTrackOne = function(timecode) {
     this.qeVTrackOne.razor(timecode, true, true);
 };
 
-ActiveProject.prototype.sliceOneSecond = function() {
+ActiveProject.prototype.sliceBySecond = function(secondsToSlice) {
     var frameRate = this.qeSeq.videoFrameRate;
-    var secondsToSlice = 1;
     var secondsInFrame = secondsToSlice * frameRate;
     this.razorAtVTrackOne(this.getPlayheadTimecode());
     this.movePlayheadByFrames(secondsInFrame);
+    this.razorAtVTrackOne(this.getPlayheadTimecode());
+};
+
+ActiveProject.prototype.sliceByFrame = function(frameToSlice) {
+    var frameRate = this.qeSeq.videoFrameRate;
+    this.razorAtVTrackOne(this.getPlayheadTimecode());
+    this.movePlayheadByFrames(frameToSlice);
     this.razorAtVTrackOne(this.getPlayheadTimecode());
 };
 

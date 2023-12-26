@@ -52,10 +52,8 @@
 				<div id="renderFHD" class="col-md-3">
 					<button id="fhd-render-button" class="buttonClass">Render</button>
 				</div>
-				<!-- <div id="reframeToVertical" class="col-md-2">
-				</div> -->
 				<div class="miscButtons col-md-12">
-					<button id="copy-photos-button" class="buttonClass miscButton">Copy Photos</button>
+					<button id="copy-photos-button" class="buttonClass miscButton" hidden>Copy Photos</button>
 					<button id="fhd-duck-button" class="buttonClass miscButton">Auto-Duck</button>
 					<button id="reframe-button" class="buttonClass miscButton">Reframe</button>
 				</div>
@@ -104,16 +102,19 @@
 			<div id="settingsButtonHolder" class="row g-1 justify-content-between d-none">
 				<div id="menuContainer" class="d-flex">
 					<div class="col-md-3 menuButtons">
-						<button id="single-screenshot-button" class="buttonClass menuButton">Screenshot at Playhead</button>
+						<button id="single-screenshot-button" class="buttonClass menuButton">Single Frame Render</button>
 					</div>
 					<div class="col-md-3 menuButtons">
-						<button id="freefall-screenshot-button" class="buttonClass menuButton">Freefall to Photos</button>
+						<button id="freefall-screenshot-button" class="buttonClass menuButton">Render Freefall Photos</button>
+					</div>
+					<div class="col-md-3 menuButtons">
+						<button id="compact-rendering-button" class="buttonClass menuButton">Compact Rendering</button>
 					</div>
 					<div class="col-md-3 menuButtons">
 						<button id="change-music-button" class="buttonClass menuButton">Change FHD Music</button>
 					</div>
 					<div class="col-md-3 menuButtons">
-						<button id="nas-button" class="buttonClass menuButton">Select NAS Folder</button>
+						<button id="nas-button" class="buttonClass menuButton" hidden>Select NAS Folder</button>
 					</div>
 					<div class="buttonSettings">
 						<button id="openSettings" class="buttonClass"><i class="bi bi-gear"></i></button>

@@ -15,6 +15,7 @@ const main = {
 	allRenderProjectButton: document.getElementById("all-render-button"),
 	singleScreenshotButton: document.getElementById("single-screenshot-button"),
 	freefallScreenshotButton: document.getElementById("freefall-screenshot-button"),
+	compactRenderButton: document.getElementById("compact-rendering-button"),
 	fhdDuckButton: document.getElementById("fhd-duck-button"),
 	smeDuckButton: document.getElementById("sme-duck-button"),
 	nasCopyButon: document.getElementById("copy-photos-button"),
@@ -335,6 +336,7 @@ const main = {
 		this.handleButtonClick(this.allRenderProjectButton, () => this.renderProject("all"));
 		this.handleButtonClick(this.singleScreenshotButton, () => this.renderProject("image"));
 		this.handleButtonClick(this.freefallScreenshotButton, () => this.renderProject("freefall"));
+		this.handleButtonClick(this.compactRenderButton, () => this.renderProject("report"));
 		
 		this.canopyAudioYesButton.addEventListener("click", () => this.setBoolSettings("canopyAudio", true));
 		this.canopyAudioNoButton.addEventListener("click", () => this.setBoolSettings("canopyAudio", false));
