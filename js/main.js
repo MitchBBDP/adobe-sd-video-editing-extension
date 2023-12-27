@@ -31,6 +31,8 @@ const main = {
 	autoDeleteMediaNoButton: document.getElementById("autoDeleteMediaNo"),
 	openSettingsButton: document.getElementById("openSettings"),
 	closeSettingsButton: document.getElementById("closeSettings"),
+	panelContainer: document.getElementById('cep-ui'),
+	loaderContainer: document.getElementById('loader'),
 	homeTab: document.getElementById('homeTab'),
 	homeTabButtons: document.getElementById('homeButtonHolder'),
 	fhdTab: document.getElementById('fhdTab'),
@@ -48,11 +50,17 @@ const main = {
 
 	//General function for running and communicating with jsx files
 	runJsxFile(targetFunction, param1 = null, param2 = null, param3 = null) {
+		let ppro = this;
+		this.panelContainer.style.display = "none";
+		this.loaderContainer.style.display = "block";
+
 		return new Promise((resolve, reject) => {
 			const csInterface = new CSInterface();
 			const jsxPath = csInterface.getSystemPath(SystemPath.EXTENSION) + this.scriptPath;
 
 			csInterface.evalScript(`$.evalFile("${jsxPath}"); ${targetFunction}("${param1}", "${param2}", ${param3})`, result => {
+				ppro.panelContainer.style.display = "block";
+				ppro.loaderContainer.style.display = "none";
 				if (result !== undefined) {
 					resolve(result);
 				} else {
@@ -260,6 +268,7 @@ const main = {
 	},
 
 	showCursor(state) {
+		//Param state is either true or false.
 		const csInterface = new CSInterface();
 		csInterface.evalScript(`app.showCursor(${state});`);
 	},
@@ -268,15 +277,11 @@ const main = {
 	 to be disabled for a while after the event*/
 	handleButtonClick(button, actionFunction) {
 		button.addEventListener("click", () => {
-			this.showCursor(false);
 			button.disabled = true;
 			actionFunction();
-
 			setTimeout(() => {
 				button.disabled = false;
 			}, 500);
-
-			this.showCursor(true);
 		});
 	},
 

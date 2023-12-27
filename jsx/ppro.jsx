@@ -341,9 +341,8 @@ function applyTwixtor() {
     (1) extendTwixtorClip getting blocked
     (2) twixtor effect not applying to the correct clip
     (3) Source monitor displays the start of the video after applying twixtor*/
-    $.sleep(100);
     ap.movePlayheadByFrames(-15);
-    $.sleep(500);
+    $.sleep(400);
 
     //Get the twixtor clip
     var twixtorClip = ap.seq.getSelection()[0];

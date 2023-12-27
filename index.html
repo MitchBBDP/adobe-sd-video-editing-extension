@@ -15,7 +15,7 @@
 </head>
 
 <body>
-	<div class="cep-ui">
+	<div id="cep-ui">
 		<div class="tabButtons col-md-12 mb-2">
 			<button id="homeTab" class="tabButton" autofocus><i class="bi bi-house"></i></button>
 			<button id="fhdTab" class="tabButton">Full High Definition</button>
@@ -102,10 +102,12 @@
 			<div id="settingsButtonHolder" class="row g-1 justify-content-between d-none">
 				<div id="menuContainer" class="d-flex">
 					<div class="col-md-3 menuButtons">
-						<button id="single-screenshot-button" class="buttonClass menuButton">Single Frame Render</button>
+						<button id="single-screenshot-button" class="buttonClass menuButton">Single Frame
+							Render</button>
 					</div>
 					<div class="col-md-3 menuButtons">
-						<button id="freefall-screenshot-button" class="buttonClass menuButton">Render Freefall Photos</button>
+						<button id="freefall-screenshot-button" class="buttonClass menuButton">Render Freefall
+							Photos</button>
 					</div>
 					<div class="col-md-3 menuButtons">
 						<button id="compact-rendering-button" class="buttonClass menuButton">Compact Rendering</button>
@@ -146,7 +148,7 @@
 								</div>
 							</div>
 						</div>
-						<div class="row">
+						<div class="row" hidden>
 							<div class="settingsDiv">
 								<span class="settingsSpan">Enable Proxy: </span>
 								<div class="settingsOption">
@@ -179,12 +181,15 @@
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-			integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-			crossorigin="anonymous"></script>
-		<script src="js/lib/CSInterface.js"></script>
-		<script src="js/main.js"></script>
+	<div id="loader"></div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+		crossorigin="anonymous"></script>
+	<script src="js/lib/CSInterface.js"></script>
+	<script src="js/main.js"></script>
 </body>
 
 </html>
