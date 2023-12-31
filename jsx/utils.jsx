@@ -653,6 +653,26 @@ ActiveProject.prototype.createPhotosFolder = function(folderName) {
     }
 };
 
+ActiveProject.prototype.checkPhotosFolder = function() {
+    var parentFolder = this.getParentFolder();
+    var folderPhotos = ["Photos", "Photo", "photos", "photo"];
+    for (var i = 0; i < folderPhotos.length; i++) {
+        var photosFolder = new Folder(parentFolder + "/" + folderPhotos[i]);
+        if (photosFolder.exists) {
+            return true;
+        }
+    }
+
+    for (var i = 0; i < 10; i++) {
+        var folder100GOPRO = new Folder(parentFolder + "/" + "10" + i.toString() + "GOPRO");
+        if (folder100GOPRO.exists) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
 //Create photos folder inside the NAS tandem folder
 ActiveProject.prototype.createNasPhotosFolder = function(folder) {
     var photosFolder = new Folder(folder + "/" + "Photos");

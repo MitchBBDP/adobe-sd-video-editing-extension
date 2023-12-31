@@ -31,8 +31,6 @@ const main = {
 	autoDeleteMediaNoButton: document.getElementById("autoDeleteMediaNo"),
 	openSettingsButton: document.getElementById("openSettings"),
 	closeSettingsButton: document.getElementById("closeSettings"),
-	panelContainer: document.getElementById('cep-ui'),
-	loaderContainer: document.getElementById('loader'),
 	homeTab: document.getElementById('homeTab'),
 	homeTabButtons: document.getElementById('homeButtonHolder'),
 	fhdTab: document.getElementById('fhdTab'),
@@ -48,19 +46,36 @@ const main = {
 	selectCounter: document.getElementById('select-counter'),
 	scriptPath: "/jsx/ppro.jsx",
 
+	loadingScreen: {
+		panelContainer: document.getElementById('cep-ui'),
+		loaderContainer: document.getElementById('loader'),
+
+		show() {
+			this.panelContainer.style.display = "block";
+			this.loaderContainer.style.display = "none";
+		},
+
+		hide() {
+			this.panelContainer.style.display = "none";
+			this.loaderContainer.style.display = "block";
+		}
+	},
+
 	//General function for running and communicating with jsx files
 	runJsxFile(targetFunction, param1 = null, param2 = null, param3 = null) {
-		let ppro = this;
-		this.panelContainer.style.display = "none";
-		this.loaderContainer.style.display = "block";
-
+		this.loadingScreen.hide();
 		return new Promise((resolve, reject) => {
 			const csInterface = new CSInterface();
 			const jsxPath = csInterface.getSystemPath(SystemPath.EXTENSION) + this.scriptPath;
 
 			csInterface.evalScript(`$.evalFile("${jsxPath}"); ${targetFunction}("${param1}", "${param2}", ${param3})`, result => {
-				ppro.panelContainer.style.display = "block";
-				ppro.loaderContainer.style.display = "none";
+				main.loadingScreen.show();
+				if (targetFunction === "createNewProject") {
+					if (result === 'true') {
+						main.tandemNameInput.value = "";
+						main.boardCheck.checked = true;
+					}
+				}
 				if (result !== undefined) {
 					resolve(result);
 				} else {
@@ -88,9 +103,6 @@ const main = {
 			const currentDate = `${day} ${month} ${year}`;
 
 			this.runJsxFile("createNewProject", newTandemName, currentDate, hasBoard);
-
-			this.tandemNameInput.value = "";
-			// this.boardCheck.checked = true;
 		} else {
 			const content = "Input must be: (1) More than three words, (2) No leading or trailing spaces, (3) No consecutive spaces.";
 			const title = "Invalid Input";
@@ -181,36 +193,36 @@ const main = {
 
 	getBoolSettings(setting) {
 		this.runJsxFile("getBoolSettings", setting)
-		.then(result => {
-			if (setting === "canopyAudio") {
-				if (result === "true") {
-					this.canopyAudioYesButton.checked = true;
-				} else if (result === "false") {
-					this.canopyAudioNoButton.checked = true;
+			.then(result => {
+				if (setting === "canopyAudio") {
+					if (result === "true") {
+						this.canopyAudioYesButton.checked = true;
+					} else if (result === "false") {
+						this.canopyAudioNoButton.checked = true;
+					}
+				} else if (setting === "oneFrame") {
+					if (result === "true") {
+						this.oneFrameYesButton.checked = true;
+					} else if (result === "false") {
+						this.oneFrameNoButton.checked = true;
+					}
+				} else if (setting === "proxy") {
+					if (result === "true") {
+						this.proxyYesButton.checked = true;
+					} else if (result === "false") {
+						this.proxyNoButton.checked = true;
+					}
+				} else if (setting === "autoDeleteMedia") {
+					if (result === "true") {
+						this.autoDeleteMediaYesButton.checked = true;
+					} else if (result === "false") {
+						this.autoDeleteMediaNoButton.checked = true;
+					}
 				}
-			} else if (setting === "oneFrame") {
-				if (result === "true") {
-					this.oneFrameYesButton.checked = true;
-				} else if (result === "false") {
-					this.oneFrameNoButton.checked = true;
-				}
-			} else if (setting === "proxy") {
-				if (result === "true") {
-					this.proxyYesButton.checked = true;
-				} else if (result === "false") {
-					this.proxyNoButton.checked = true;
-				}
-			} else if (setting === "autoDeleteMedia") {
-				if (result === "true") {
-					this.autoDeleteMediaYesButton.checked = true;
-				} else if (result === "false") {
-					this.autoDeleteMediaNoButton.checked = true;
-				}
-			}
-		})
-		.catch(error => {
-			this.handleJsxError(error)
-		});
+			})
+			.catch(error => {
+				this.handleJsxError(error)
+			});
 	},
 
 	setSettingsUI() {
@@ -220,8 +232,9 @@ const main = {
 		this.getBoolSettings("autoDeleteMedia");
 	},
 
-	runSequenceChangeEvent() {
+	runPproEventListeners() {
 		this.runJsxFile("sequenceChangeListener");
+		this.runJsxFile("encoderErrorListener");
 	},
 
 	/*Fetch sequence change event from ppro sequenceChangeListener().*/
@@ -282,6 +295,7 @@ const main = {
 			setTimeout(() => {
 				button.disabled = false;
 			}, 500);
+
 		});
 	},
 
@@ -342,7 +356,7 @@ const main = {
 		this.handleButtonClick(this.singleScreenshotButton, () => this.renderProject("image"));
 		this.handleButtonClick(this.freefallScreenshotButton, () => this.renderProject("freefall"));
 		this.handleButtonClick(this.compactRenderButton, () => this.renderProject("report"));
-		
+
 		this.canopyAudioYesButton.addEventListener("click", () => this.setBoolSettings("canopyAudio", true));
 		this.canopyAudioNoButton.addEventListener("click", () => this.setBoolSettings("canopyAudio", false));
 		this.oneFrameYesButton.addEventListener("click", () => this.setBoolSettings("oneFrame", true));
@@ -360,7 +374,7 @@ const main = {
 		this.boardCheck.addEventListener("change", () => this.boardSwitch(this.boardCheck, this.boardLabel));
 		this.openSettingsButton.addEventListener("click", () => this.openSettingsContainer());
 		this.closeSettingsButton.addEventListener("click", () => this.closeSettingsContainer());
-		this.runSequenceChangeEvent();
+		this.runPproEventListeners();
 		this.addSequenceChangeListener();
 		this.setSettingsUI();
 

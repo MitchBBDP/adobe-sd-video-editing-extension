@@ -7,18 +7,18 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     //Check if you are in the default untitled prproj
     var fileName = ap.getFileName();
     var fileNameLength = fileName.split(/\s+/).length;
-    if (fileName.toLowerCase() != 'untitled' || fileNameLength > 1) {
-        var userConfirmed = confirm("Do you want to proceed?", true, "Default Untitled Project Not Selected");
+    if (fileNameLength > 2) {
+        var userConfirmed = confirm("Do you want to proceed?", true, "Default Project Not Selected");
 
         if (!userConfirmed) {
-            return;
+            return false;
         }
     }
 
     //Tandem folder creation and error handler
     var tandemFolder = ap.createNewFolder(nameOfTandem);
     if (!tandemFolder) {
-        return;
+        return false;
     }
 
     //File import and error handler
@@ -29,7 +29,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     //Check if file selection is valid
     if (!fileSelected || !selectionValidator(fileSelected.length, hasBoard)) {
         tandemFolder.remove();
-        return;
+        return false;
     }
 
     //Create New Tandem Premiere Pro Project File (Prproj)
@@ -44,7 +44,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Cancel the operation if file copy is unsucessful
     if (!videosFolder) {
-        return;
+        return false;
     }
 
     //Import Copied Files to PrProj
@@ -125,6 +125,8 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Savepoint
     ap.proj.save();
+
+    return true;
 
     // ----------------------------------------------------------------------------------------- //
     // ------------------------------- Create New Project Functions ---------------------------- //
@@ -693,7 +695,7 @@ function clipSelect() {
         if (!isTwixtorClip) {
             ap.sliceByFrame(3);
             ap.movePlayheadByFrames(-1);
-            $.sleep(1000);
+            $.sleep(300);
         }
     }
     clipsSelected = ap.seq.getSelection();
@@ -1189,6 +1191,10 @@ function renderProject(sequenceType) {
         var success = renderCompactInAME();
     } else {
         var success = renderSequencesInAME(projectSequences, sequenceType);
+        var hasPhotos = ap.checkPhotosFolder();
+        if (!hasPhotos) {
+            ap.updateEventPanel("error", "Photos folder not detected in " + ap.getCustomerName() + " Tandem Folder.");
+        }
         ap.proj.closeDocument(1, 0); //Parameter: (saveFirst, promptUserForChanges)
     }
 
@@ -1556,5 +1562,14 @@ function sequenceChangeListener() {
             eventObj.data = app.project.activeSequence.name;
             eventObj.dispatch();
         }
+    }
+}
+
+function encoderErrorListener() {
+    app.bind('onEncoderJobError', encoderErrorFxn);
+
+    function encoderErrorFxn() {
+        var ap = new ActiveProject();
+        ap.updateEventPanel("error", "Project render failed. Please check your Adobe Media Encoder.");
     }
 }
