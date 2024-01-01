@@ -29,6 +29,12 @@ const main = {
 	proxyNoButton: document.getElementById("proxyNo"),
 	autoDeleteMediaYesButton: document.getElementById("autoDeleteMediaYes"),
 	autoDeleteMediaNoButton: document.getElementById("autoDeleteMediaNo"),
+	use4kYesButton: document.getElementById("use4kYes"),
+	use4kNoButton: document.getElementById("use4kNo"),
+	lutAdjustYesButton: document.getElementById("lutAdjustYes"),
+	lutAdjustNoButton: document.getElementById("lutAdjustNo"),
+	reframeAtEndYesButton: document.getElementById("reframeAtEndYes"),
+	reframeAtEndNoButton: document.getElementById("reframeAtEndNo"),
 	openSettingsButton: document.getElementById("openSettings"),
 	closeSettingsButton: document.getElementById("closeSettings"),
 	homeTab: document.getElementById('homeTab'),
@@ -123,8 +129,8 @@ const main = {
 		this.runJsxFile("addMEWT");
 	},
 
-	reframeToVertical() {
-		this.runJsxFile("reframeToVertical");
+	reframeToSme() {
+		this.runJsxFile("reframeToSme");
 	},
 
 	clipSelect() {
@@ -168,7 +174,9 @@ const main = {
 
 	renderProject(option) {
 		this.runJsxFile("renderProject", option);
-		this.showTabButtons(this.homeTabButtons, this.homeTab);
+		if (option === 'fhd' || option === 'sme' || option === 'all'){
+			this.showTabButtons(this.homeTabButtons, this.homeTab);
+		}
 	},
 
 	autoDuckMusic() {
@@ -189,6 +197,13 @@ const main = {
 
 	setBoolSettings(setting, selection) {
 		this.runJsxFile("setBoolSettings", setting, selection);
+		if (setting === "reframeAtEnd") {
+			if (selection) {
+				this.reframeButton.textContent = "New SME";
+			} else {
+				this.reframeButton.textContent = "Reframe to SME";
+			}
+		}
 	},
 
 	getBoolSettings(setting) {
@@ -218,6 +233,26 @@ const main = {
 					} else if (result === "false") {
 						this.autoDeleteMediaNoButton.checked = true;
 					}
+				} else if (setting === "use4k") {
+					if (result === "true") {
+						this.use4kYesButton.checked = true;
+					} else if (result === "false") {
+						this.use4kNoButton.checked = true;
+					}
+				} else if (setting === "lutAdjust") {
+					if (result === "true") {
+						this.lutAdjustYesButton.checked = true;
+					} else if (result === "false") {
+						this.lutAdjustNoButton.checked = true;
+					}
+				} else if (setting === "reframeAtEnd") {
+					if (result === "true") {
+						this.reframeAtEndYesButton.checked = true;
+						this.reframeButton.textContent = "New SME";
+					} else if (result === "false") {
+						this.reframeAtEndNoButton.checked = true;
+						this.reframeButton.textContent = "Reframe to SME";
+					}
 				}
 			})
 			.catch(error => {
@@ -230,6 +265,9 @@ const main = {
 		this.getBoolSettings("oneFrame");
 		this.getBoolSettings("proxy");
 		this.getBoolSettings("autoDeleteMedia");
+		this.getBoolSettings("use4k");
+		this.getBoolSettings("lutAdjust");
+		this.getBoolSettings("reframeAtEnd");
 	},
 
 	runPproEventListeners() {
@@ -248,7 +286,8 @@ const main = {
 	autoSwitchTabs(sequenceName) {
 		if (sequenceName.indexOf("- FullHD") !== -1) {
 			this.showTabButtons(this.fhdTabButtons, this.fhdTab);
-		} else if (sequenceName.indexOf("- SocialMediaEdit") !== -1) {
+		} else if (sequenceName.indexOf("- SocialMediaEdit") !== -1 ||
+					sequenceName.indexOf("- New SME") !== -1) {
 			this.showTabButtons(this.smeTabButtons, this.smeTab);
 		} else {
 			this.showTabButtons(this.homeTabButtons, this.homeTab);
@@ -335,12 +374,12 @@ const main = {
 
 	init() {
 		//Initiate event listeners for button clicks
-		this.handleButtonClick(this.newProjButton, () => this.createNewProject())
-		this.handleButtonClick(this.handicamButton, () => this.insertHandicam())
-		this.handleButtonClick(this.twixtorButton, () => this.applyTwixtor())
+		this.handleButtonClick(this.newProjButton, () => this.createNewProject());
+		this.handleButtonClick(this.handicamButton, () => this.insertHandicam());
+		this.handleButtonClick(this.twixtorButton, () => this.applyTwixtor());
 		this.handleButtonClick(this.mewtButton, () => this.addMEWT());
-		this.handleButtonClick(this.reframeButton, () => this.reframeToVertical())
-		this.handleButtonClick(this.selectClipsButton, () => this.clipSelect())
+		this.handleButtonClick(this.reframeButton, () => this.reframeToSme());
+		this.handleButtonClick(this.selectClipsButton, () => this.clipSelect());
 		this.handleButtonClick(this.decrementSelectionButton, () => this.decrementSelection());
 		this.handleButtonClick(this.resetSelectionButton, () => this.resetSelection());
 		this.handleButtonClick(this.alignToSMEButton, () => this.alignClipsToSocialMediaEdit());
@@ -365,6 +404,12 @@ const main = {
 		this.proxyNoButton.addEventListener("click", () => this.setBoolSettings("proxy", false));
 		this.autoDeleteMediaYesButton.addEventListener("click", () => this.setBoolSettings("autoDeleteMedia", true));
 		this.autoDeleteMediaNoButton.addEventListener("click", () => this.setBoolSettings("autoDeleteMedia", false));
+		this.lutAdjustYesButton.addEventListener("click", () => this.setBoolSettings("lutAdjust", true));
+		this.lutAdjustNoButton.addEventListener("click", () => this.setBoolSettings("lutAdjust", false));
+		this.use4kYesButton.addEventListener("click", () => this.setBoolSettings("use4k", true));
+		this.use4kNoButton.addEventListener("click", () => this.setBoolSettings("use4k", false));
+		this.reframeAtEndYesButton.addEventListener("click", () => this.setBoolSettings("reframeAtEnd", true));
+		this.reframeAtEndNoButton.addEventListener("click", () => this.setBoolSettings("reframeAtEnd", false));
 
 		//Handles misc UI event listeners
 		this.homeTab.addEventListener("click", () => this.showTabButtons(this.homeTabButtons, this.homeTab));

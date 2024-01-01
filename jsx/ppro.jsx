@@ -3,6 +3,7 @@
 function createNewProject(nameOfTandem, currentDate, hasBoard) {
     var ap = new ActiveProject();
     var srcFolder = ap.getSrcFolder();
+    var use4k = use4kPreset();
 
     //Check if you are in the default untitled prproj
     var fileName = ap.getFileName();
@@ -51,7 +52,11 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     ap.importToProject(videosFolder.getFiles(), ap.vidBin);
 
     //Import FHD Stock Files to PrProj
-    var stockFolder = new Folder(srcFolder + "/fhd");
+    if (use4k) {
+        var stockFolder = new Folder(srcFolder + "/fhd4k");
+    } else {
+        var stockFolder = new Folder(srcFolder + "/fhd");
+    }
     ap.createBin("Template");
     ap.importToProject(stockFolder.getFiles(), ap.templateBin);
 
@@ -80,7 +85,11 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     ap.trimInAndOutPoint(ap.templateBin);
 
     //Create New Sequence for FHD
-    var fhdSqPresetPath = srcFolder + "/" + "sequence" + "/" + "FullHD.sqpreset";
+    if (use4k) {
+        var fhdSqPresetPath = srcFolder + "/" + "sequence" + "/" + "4KFullHD.sqpreset";
+    } else {
+        var fhdSqPresetPath = srcFolder + "/" + "sequence" + "/" + "FullHD.sqpreset";
+    }
     var fhdSqPreset = new File(fhdSqPresetPath);
     createFhdSeq(nameOfTandem, fhdSqPreset);
 
@@ -121,6 +130,19 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
         for (var i = 0; i < fileSelected.length; i++) {
             fileSelected[i].remove();
         }
+    }
+
+    //Upscale the presets if 4k (change this once 4k stocks are ready if necessary)
+    if (use4k) {
+        ap.initializeQEProject();
+        ap.activeQESeqAndTracksInitialize();
+        ap.qeVTrackTwoClipsInitialize();
+        ap.qeVTrackThreeClipsInitialize();
+
+        ap.qeIntroMaskVClip.setScaleToFrameSize(true);
+        ap.qeOutroMaskVClip.setScaleToFrameSize(true);
+        ap.qeLowerThirdsVClip.setScaleToFrameSize(true);
+        ap.qeCopyrightVClip.setScaleToFrameSize(true);
     }
 
     //Savepoint
@@ -207,6 +229,20 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
         var settings = ap.getSettingsArray(settingsDb);
         if (settings.auto_delete_original_media[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function use4kPreset() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.use_4k_preset[0] === "true") {
             return true;
         } else {
             return false;
@@ -474,6 +510,12 @@ function addMEWT() {
 
     ap.autoDuck();
 
+    var use4k = use4kPreset();
+    if (use4k) {
+        ap.qeVTrackTwoClipsInitialize();
+        ap.qeWatermarkClip.setScaleToFrameSize(true);
+    }
+
     // ----------------------------------------------------------------------------------------- //
     // ------------------ Add Music, Effects, Watermark, Transitions Functions ----------------- //
     // ----------------------------------------------------------------------------------------- //
@@ -621,21 +663,40 @@ function addMEWT() {
         ap.adjustVolume(ap.outroAClip, -10);
     }
 
+    function use4kPreset() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.use_4k_preset[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
-function reframeToVertical() {
+function reframeToSme() {
     var ap = new ActiveProject();
     ap.initializeCurrentProject();
     ap.activeSeqAndTracksInitialize();
     ap.initializeQEProject();
     ap.activeQESeqAndTracksInitialize();
 
-    //Reframe the sequence to 9:16 aspect ratio
-    /*'faster' argument is for the reframe to create as many keyframes as possible
-    to follow the action properly. We can set this to 'default' or 'slower' if necessary.*/
+    var isReframeAtEnd = reframeAtEnd();
     var seqNameSplit = ap.seq.name.split('-');
     var igSeqName = seqNameSplit[0];
-    ap.seq.autoReframeSequence(9, 16, 'faster', igSeqName + "- SocialMediaEdit", false);
+
+    //Reframe the sequence to specified aspect ratio
+    /*'faster' argument is for the reframe to create as many keyframes as possible
+    to follow the action properly. We can set this to 'default' or 'slower' if necessary.*/
+    if (isReframeAtEnd) {
+        ap.seq.autoReframeSequence(16, 9, 'default', igSeqName + "- New SME", false);
+    } else {
+        ap.seq.autoReframeSequence(9, 16, 'faster', igSeqName + "- SocialMediaEdit", false);
+    }
 
     //Initialize the sequence property again because auto-reframe creates a new sequence
     ap.activeSeqAndTracksInitialize();
@@ -659,6 +720,20 @@ function reframeToVertical() {
         ap.removeClip(ap.preInterviewAClip);
         ap.removeClip(ap.stockOneClip);
         ap.removeClip(ap.stockTwoClip);
+    }
+
+    function reframeAtEnd() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.reframe_at_end[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -823,6 +898,11 @@ function alignClipsToSocialMediaEdit() {
 
     var selectedClipsDb = ap.getSelectedClipsDb();
     var clipId = ap.getClipIdFromDb(selectedClipsDb);
+
+    if (clipId.video.length === 0) {
+        alert("Select clips before aligning.", "Error: No Clips Selected", true);
+        return;
+    }
 
     /*Remove all clips in video track one and audio track one that is not selected 
     based on the txt db selectedClipsDb*/
@@ -1037,6 +1117,7 @@ function applyEffectsAndTransitionsToSME() {
     ap.binInitialize();
     ap.socMedVClipsInitialize();
     ap.socMedAClipsInitialize();
+    ap.socMedTemplateClipsInitialize();
     ap.socMedClipsToVar();
     ap.initializeQEProject();
     ap.activeQESeqAndTracksInitialize();
@@ -1068,6 +1149,19 @@ function applyEffectsAndTransitionsToSME() {
 
     //Duck the music clip against the audio clips
     ap.autoDuck();
+
+    //Add track and adjustment layer for LUT if enabled in settings
+    var isEnableLutAdjustmentLayer = enableLutAdjustmentLayer();
+    if (isEnableLutAdjustmentLayer) {
+        addLutAdjustmentLayer();
+    }
+
+    var isReframeAtEnd = reframeAtEnd();
+    var seqNameSplit = ap.seq.name.split('-');
+    var igSeqName = seqNameSplit[0];
+    if (isReframeAtEnd) {
+        ap.seq.autoReframeSequence(9, 16, 'faster', igSeqName + "- SocialMediaEdit", false);
+    }
 
     // ----------------------------------------------------------------------------------------- //
     // ------------------------- SME Effects and Transitions Functions ------------------------- //
@@ -1161,6 +1255,41 @@ function applyEffectsAndTransitionsToSME() {
                     prop.scale.setInterpolationTypeAtKey(adjustmentLayerClip.inPoint.seconds + keyTimes[i], 5, 1);
                 }
             }
+        }
+    }
+
+    function addLutAdjustmentLayer() {
+        ap.qeSeq.addTracks(1, 3, 0, 0);
+        var vTrackFour = ap.vTrack[3];
+        vTrackFour.insertClip(adjustmentLayer, ap.smIntroClip.end.seconds);
+        vTrackFour.clips[0].end = ap.newTimeObject(60);
+    }
+
+    function enableLutAdjustmentLayer() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.enable_lut_adjustment_layer[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function reframeAtEnd() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.reframe_at_end[0] === "true") {
+            return true;
+        } else {
+            return false;
         }
     }
 }
@@ -1275,13 +1404,19 @@ function renderProject(sequenceType) {
     function renderFrameInAME() {
         var isEncoded = null;
 
-        var inPoint = ap.getPlayheadSeconds();
-        var frames = 1;
-        var framesInSeconds = ap.framesToSeconds(frames);
-        var outPoint = inPoint + framesInSeconds;
+        var currInPoint = ap.seq.getInPoint();
+        var currOutPoint = ap.seq.getOutPoint();
+        var currInOutDiff = currOutPoint - currInPoint;
 
-        ap.seq.setInPoint(inPoint);
-        ap.seq.setOutPoint(outPoint);
+        if (currInPoint <= 0 || currOutPoint <= 0 || currInOutDiff <= 0) {
+            var inPoint = ap.getPlayheadSeconds();
+            var frames = 1;
+            var framesInSeconds = ap.framesToSeconds(frames);
+            var outPoint = inPoint + framesInSeconds;
+
+            ap.seq.setInPoint(inPoint);
+            ap.seq.setOutPoint(outPoint);
+        }
 
         var photosFolderName = "Photos";
         var photosFolder = ap.createPhotosFolder(photosFolderName);
@@ -1521,6 +1656,12 @@ function setBoolSettings(setting, selection) {
         settings.enable_proxy[0] = selection;
     } else if (setting === "autoDeleteMedia") {
         settings.auto_delete_original_media[0] = selection;
+    } else if (setting === "use4k") {
+        settings.use_4k_preset[0] = selection;
+    } else if (setting === "lutAdjust") {
+        settings.enable_lut_adjustment_layer[0] = selection;
+    } else if (setting === "reframeAtEnd") {
+        settings.reframe_at_end[0] = selection;
     }
 
     ap.writeTxtFile(settingsDb, settings);
@@ -1545,6 +1686,12 @@ function getBoolSettings(setting) {
         return settings.enable_proxy[0];
     } else if (setting === "autoDeleteMedia") {
         return settings.auto_delete_original_media[0];
+    } else if (setting === "use4k") {
+        return settings.use_4k_preset[0];
+    } else if (setting === "lutAdjust") {
+        return settings.enable_lut_adjustment_layer[0];
+    } else if (setting === "reframeAtEnd") {
+        return settings.reframe_at_end[0];
     }
 }
 

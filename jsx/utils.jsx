@@ -743,7 +743,10 @@ ActiveProject.prototype.getSettingsArray = function(db) {
         sme_undercanopy_audio: [],
         one_frame_select: [],
         enable_proxy: [],
-        auto_delete_original_media: []
+        auto_delete_original_media: [],
+        enable_lut_adjustment_layer: [],
+        use_4k_preset: [],
+        reframe_at_end: []
     }
 
     this.readTxtFile(db, settingsArray);
@@ -1060,6 +1063,20 @@ ActiveProject.prototype.qeVTrackTwoClipsInitialize = function() {
                 this.qeOutroVClip = clip;
             } else if (clipName.indexOf("watermark") != -1) {
                 this.qeWatermarkClip = clip;
+            }
+        }
+    }
+};
+
+ActiveProject.prototype.qeVTrackThreeClipsInitialize = function() {
+    for (var i = 0; i < this.qeVTrackThree.numItems; i++) {
+        var clip = this.qeVTrackThree.getItemAt(i);
+        if (clip.type == "Clip") {
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("lower thirds") != -1) {
+                this.qeLowerThirdsVClip = clip;
+            } else if (clipName.indexOf("copyright") != -1) {
+                this.qeCopyrightVClip = clip;
             }
         }
     }

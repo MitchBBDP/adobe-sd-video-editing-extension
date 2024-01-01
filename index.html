@@ -55,7 +55,7 @@
 				<div class="miscButtons col-md-12">
 					<button id="copy-photos-button" class="buttonClass miscButton" hidden>Copy Photos</button>
 					<button id="fhd-duck-button" class="buttonClass miscButton">Auto-Duck</button>
-					<button id="reframe-button" class="buttonClass miscButton">Reframe</button>
+					<button id="reframe-button" class="buttonClass miscButton">Reframe to SME</button>
 				</div>
 			</div>
 			<!-- Buttons for Social Media Edit-->
@@ -125,6 +125,28 @@
 				<div id="settingsContainer" class="d-none">
 					<div class="row">
 						<div class="settingsDiv">
+							<span class="settingsSpan">Use 4k Preset: </span>
+							<div class="settingsOption">
+								<input type="radio" name="use4k" id="use4kYes"
+									class="form-check-input settingsRadio">
+								<label for="use4kYes" class="form-check-label">Yes</label>
+								<input type="radio" name="use4k" id="use4kNo"
+									class="form-check-input settingsRadio">
+								<label for="use4kNo" class="form-check-label">No</label>
+							</div>
+						</div>
+						<div class="settingsDiv">
+							<span class="settingsSpan">Reframe at End: </span>
+							<div class="settingsOption">
+								<input type="radio" name="reframeAtEnd" id="reframeAtEndYes"
+									class="form-check-input settingsRadio">
+								<label for="reframeAtEndYes" class="form-check-label">Yes</label>
+								<input type="radio" name="reframeAtEnd" id="reframeAtEndNo"
+									class="form-check-input settingsRadio">
+								<label for="reframeAtEndNo" class="form-check-label">No</label>
+							</div>
+						</div>
+						<div class="settingsDiv">
 							<span class="settingsSpan">Include Undercanopy Audio in SME: </span>
 							<div class="settingsOption">
 								<input type="radio" name="undercanopy" id="undercanopyYes"
@@ -158,6 +180,19 @@
 									<input type="radio" name="proxy" id="proxyNo"
 										class="form-check-input settingsRadio">
 									<label for="proxyNo" class="form-check-label">No</label>
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="settingsDiv">
+								<span class="settingsSpan">Enable LUT Adjustment Layer: </span>
+								<div class="settingsOption">
+									<input type="radio" name="lutAdjust" id="lutAdjustYes"
+										class="form-check-input settingsRadio">
+									<label for="lutAdjustYes" class="form-check-label">Yes</label>
+									<input type="radio" name="lutAdjust" id="lutAdjustNo"
+										class="form-check-input settingsRadio">
+									<label for="lutAdjustNo" class="form-check-label">No</label>
 								</div>
 							</div>
 						</div>
