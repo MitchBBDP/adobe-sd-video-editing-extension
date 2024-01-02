@@ -1302,9 +1302,15 @@ function renderProject(sequenceType) {
     ap.initializeQEProject();
     ap.activeQESeqAndTracksInitialize();
 
+    var use4k = use4kPreset();
+
     var srcFolder = ap.getSrcFolder();
     var presetFolder = new Folder(srcFolder + "/render");
-    var fhdPreset = presetFolder.fsName + "\\" + "FullHDPreset.epr";
+    if (use4k) {
+        var fhdPreset = presetFolder.fsName + "\\" + "4KFullHDPreset.epr";
+    } else {
+        var fhdPreset = presetFolder.fsName + "\\" + "FullHDPreset.epr";
+    }
     var smePreset = presetFolder.fsName + "\\" + "IGPreset.epr";
     var miPreset = presetFolder.fsName + "\\" + "MultiImagePreset.epr";
     var siPreset = presetFolder.fsName + "\\" + "SingleImagePreset.epr";
@@ -1471,6 +1477,20 @@ function renderProject(sequenceType) {
         ap.seq.setOutPoint(0);
 
         return isEncoded;
+    }
+
+    function use4kPreset() {
+        var settingsDb = ap.getSettingsDb();
+        if (!settingsDb) {
+            return false;
+        }
+
+        var settings = ap.getSettingsArray(settingsDb);
+        if (settings.use_4k_preset[0] === "true") {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 
