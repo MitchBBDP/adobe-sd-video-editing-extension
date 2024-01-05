@@ -80,6 +80,7 @@ const main = {
 					if (result === 'true') {
 						main.tandemNameInput.value = "";
 						main.boardCheck.checked = true;
+						main.boardLabel.innerHTML = "Has Manifest Board";
 					}
 				}
 				if (result !== undefined) {
@@ -371,7 +372,7 @@ const main = {
 			label.innerHTML = "No Manifest Board";
 		}
 	},
-
+	
 	init() {
 		//Initiate event listeners for button clicks
 		this.handleButtonClick(this.newProjButton, () => this.createNewProject());
