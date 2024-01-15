@@ -38,18 +38,19 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
 
     //Set Properties for Current Tandem PrProj
     ap.initializeCurrentProject();
-    ap.createBin(binFolder);
 
     //Copy Files in a new folder inside the tandem folder
     var videosFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
 
     //Cancel the operation if file copy is unsucessful
-    if (!videosFolder) {
+    if (videosFolder) {
+        //Import Copied Files to PrProj
+        ap.createBin(binFolder);
+        ap.importToProject(videosFolder.getFiles(), ap.vidBin);
+    } else {
+        ap.updateEventPanel("error", "Error in inserting tandem video clips, please try again.");
         return false;
     }
-
-    //Import Copied Files to PrProj
-    ap.importToProject(videosFolder.getFiles(), ap.vidBin);
 
     //Import FHD Stock Files to PrProj
     if (use4k) {
@@ -268,13 +269,14 @@ function insertHandicam() {
     var binFolder = "HC Videos";
     var hcFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
 
-    if (!hcFolder) {
+    if (hcFolder) {
+       //Create project bin for handicam and import the copied files inside it
+        ap.createBin(binFolder);
+        ap.importToProject(hcFolder.getFiles(), ap.hcBin);
+    } else {
+        ap.updateEventPanel("error", "Error in inserting handicam clips, please try again.");
         return;
     }
-
-    //Create project bin for handicam and import the copied files inside it
-    ap.createBin(binFolder);
-    ap.importToProject(hcFolder.getFiles(), ap.hcBin);
 
     //Initialize HC properties
     ap.hcVidsToVarInitialize();
@@ -1302,15 +1304,9 @@ function renderProject(sequenceType) {
     ap.initializeQEProject();
     ap.activeQESeqAndTracksInitialize();
 
-    var use4k = use4kPreset();
-
     var srcFolder = ap.getSrcFolder();
     var presetFolder = new Folder(srcFolder + "/render");
-    if (use4k) {
-        var fhdPreset = presetFolder.fsName + "\\" + "4KFullHDPreset.epr";
-    } else {
-        var fhdPreset = presetFolder.fsName + "\\" + "FullHDPreset.epr";
-    }
+    var fhdPreset = presetFolder.fsName + "\\" + "FullHDPreset.epr";
     var smePreset = presetFolder.fsName + "\\" + "IGPreset.epr";
     var miPreset = presetFolder.fsName + "\\" + "MultiImagePreset.epr";
     var siPreset = presetFolder.fsName + "\\" + "SingleImagePreset.epr";
@@ -1477,20 +1473,6 @@ function renderProject(sequenceType) {
         ap.seq.setOutPoint(0);
 
         return isEncoded;
-    }
-
-    function use4kPreset() {
-        var settingsDb = ap.getSettingsDb();
-        if (!settingsDb) {
-            return false;
-        }
-
-        var settings = ap.getSettingsArray(settingsDb);
-        if (settings.use_4k_preset[0] === "true") {
-            return true;
-        } else {
-            return false;
-        }
     }
 }
 

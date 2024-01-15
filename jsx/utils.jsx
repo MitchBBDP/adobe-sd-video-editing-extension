@@ -692,13 +692,20 @@ ActiveProject.prototype.copyFilesToSubFolder = function(files, folderName) {
     //Copy tandem files to sub-folder
     try {
         for (var i in files) {
-            files[i].copy(destFolder + '/' + files[i].displayName);
+            var isCopied = files[i].copy(destFolder + '/' + files[i].displayName);
+            if (!isCopied) {
+                alert("Copying files failed", "Error: Unsucessful Copy", true);
+                destFolder.remove();
+                return null;
+            }
         }
-        return destFolder;
     } catch (error) {
         alert("Copying files failed", "Error: Unsucessful Copy", true);
+        destFolder.remove();
         return null;
     }
+
+    return destFolder;
 };
 
 //Declare source folder for templates and presets
