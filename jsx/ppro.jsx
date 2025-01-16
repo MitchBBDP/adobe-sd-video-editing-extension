@@ -34,7 +34,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
     }
 
     //Create New Tandem Premiere Pro Project File (Prproj)
-    app.newProject(tandemProjectFilePath);
+    app.newProject(tandemProjectFilePath + '.prproj');
 
     //Set Properties for Current Tandem PrProj
     ap.initializeCurrentProject();
@@ -178,7 +178,7 @@ function createNewProject(nameOfTandem, currentDate, hasBoard) {
         if (ap.hasLanding) {
             ap.landing.name = "Landing"
         }
-        for (var i in ap.postInterview) {
+        for (var i = 0; i < ap.postInterview.length; i++) {
             ap.postInterview[i].name = "PostInterview";
         }
     }
@@ -270,7 +270,7 @@ function insertHandicam() {
     var hcFolder = ap.copyFilesToSubFolder(fileSelected, binFolder);
 
     if (hcFolder) {
-       //Create project bin for handicam and import the copied files inside it
+        //Create project bin for handicam and import the copied files inside it
         ap.createBin(binFolder);
         ap.importToProject(hcFolder.getFiles(), ap.hcBin);
     } else {
@@ -320,7 +320,7 @@ function insertHandicam() {
 
     function renameHCVideos() {
         ap.handicamView.name = "HandicamView";
-        for (var i in ap.underCanopy) {
+        for (var i = 0; i < ap.underCanopy.length; i++) {
             ap.underCanopy[i].name = "UnderCanopy";
         }
     }
@@ -476,6 +476,14 @@ function addMEWT() {
     ap.activeQESeqAndTracksInitialize();
     ap.vTrackOneClipsInitialize();
     ap.aTrackOneClipsInitialize();
+    ap.vTrackTwoClipsInitialize();
+    ap.aTrackTwoClipsInitialize();
+
+    //Check if watermark or music is already present
+    if (hasMEWT()) {
+        alert("Music or Watermark Clip already found", "Error: Duplicate Action", true);
+        return;
+    }
 
     //Check if exit with twixtor has been made    
     var exitClip = ap.freefallVClip[1];
@@ -521,6 +529,27 @@ function addMEWT() {
     // ----------------------------------------------------------------------------------------- //
     // ------------------ Add Music, Effects, Watermark, Transitions Functions ----------------- //
     // ----------------------------------------------------------------------------------------- //
+    function hasMEWT() {
+        var hasMusic = false;
+        for (i = 0; i < ap.aTrackTwo.clips.length; i++) {
+            var clip = ap.aTrackTwo.clips[i];
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("music") != -1) {
+                hasMusic = true;
+            }
+        }
+
+        var hasWatermark = false;
+        for (i = 0; i < ap.vTrackTwo.clips.length; i++) {
+            var clip = ap.vTrackTwo.clips[i];
+            var clipName = clip.name.toLowerCase();
+            if (clipName.indexOf("watermark") != -1) {
+                hasWatermark = true;
+            }
+        }
+
+        return hasMusic || hasWatermark;
+    }
 
     function addMusic() {
         var musicMarkers = ap.fhdMusic.getMarkers();
@@ -803,22 +832,22 @@ function clipSelect() {
 
     /*Loop through the selection array to add each selected clips nodeID to the existing txt database.*/
     function updateClipIds(ids, selection) {
-        for (var i in selection) {
+        for (var i = 0; i < selection.length; i++) {
             var vidNodeId = null;
             var audNodeId = null;
             var isDuplicate = false;
             var selectedClip = selection[i];
             if (selectedClip.mediaType == "Video") {
                 vidNodeId = selectedClip.nodeId;
-                for (var i in ids.video) {
-                    if (ids.video[i] === vidNodeId) {
+                for (var j = 0; j < ids.video.length; j++) {
+                    if (ids.video[j] === vidNodeId) {
                         isDuplicate = true;
                     }
                 }
             } else if (selectedClip.mediaType == "Audio") {
                 audNodeId = selectedClip.nodeId;
-                for (var i in ids.audio) {
-                    if (ids.audio[i] === audNodeId) {
+                for (var k = 0; k < ids.audio.length; k++) {
+                    if (ids.audio[k] === audNodeId) {
                         isDuplicate = true;
                     }
                 }
@@ -954,7 +983,7 @@ function alignClipsToSocialMediaEdit() {
         for (var i = 0; i < ap.vTrackOne.clips.length; i++) {
             var vidClip = ap.vTrackOne.clips[i];
             var insideDb = false;
-            for (var id in vidArray) {
+            for (var id = 0; id < vidArray.length; id++) {
                 if (vidClip.nodeId === vidArray[id]) {
                     insideDb = true;
                 }
@@ -972,7 +1001,7 @@ function alignClipsToSocialMediaEdit() {
         for (var i = 0; i < ap.aTrackOne.clips.length; i++) {
             var audClip = ap.aTrackOne.clips[i];
             var insideDb = false;
-            for (var id in audArray) {
+            for (var id = 0; id < audArray.length; id++) {
                 if (audClip.nodeId === audArray[id]) {
                     insideDb = true;
                 }
@@ -1225,13 +1254,13 @@ function applyEffectsAndTransitionsToSME() {
         }
 
         function addEffectToAdjustmentLayers() {
-            for (var i in ap.qeAdjustmentLayerClips) {
+            for (var i = 0; i < ap.qeAdjustmentLayerClips.length; i++) {
                 var qeAdjustmentLayerClip = ap.qeAdjustmentLayerClips[i];
                 qeAdjustmentLayerClip.addVideoEffect(ap.transformEffect);
             }
 
-            for (var i in ap.adjustmentLayerClips) {
-                var adjustmentLayerClip = ap.adjustmentLayerClips[i];
+            for (var j = 0; j < ap.adjustmentLayerClips.length; j++) {
+                var adjustmentLayerClip = ap.adjustmentLayerClips[j];
                 var transformComponent = adjustmentLayerClip.components[2];
 
                 var prop = {

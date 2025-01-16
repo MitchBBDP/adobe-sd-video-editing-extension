@@ -587,7 +587,7 @@ ActiveProject.prototype.getAdjustmentLayerItem = function() {
 //Import files to PrProj
 ActiveProject.prototype.importToProject = function(files, bin) {
     var filesToImport = []
-    for (var i in files) {
+    for (var i = 0; i < files.length; i++) {
         filesToImport.push(files[i].fsName)
     }
     app.project.importFiles(filesToImport, false, bin, false);
@@ -691,7 +691,7 @@ ActiveProject.prototype.copyFilesToSubFolder = function(files, folderName) {
 
     //Copy tandem files to sub-folder
     try {
-        for (var i in files) {
+        for (var i = 0; i < files.length; i++) {
             var isCopied = files[i].copy(destFolder + '/' + files[i].displayName);
             if (!isCopied) {
                 alert("Copying files failed", "Error: Unsucessful Copy", true);
@@ -763,15 +763,23 @@ ActiveProject.prototype.getSettingsArray = function(db) {
 ActiveProject.prototype.readTxtFile = function(file, keyArray) {
     if (file.exists) {
         file.open("r");
-        //Read the file line by line
+        // Read the file line by line
         while (!file.eof) {
             var line = file.readln();
-
-            //Split the line into key and value
+            // Split the line into key and value
             var parts = line.split(":");
-
-            //Compare the key from the file and the keyArray. Append the value if it matches.
-            for (var key in keyArray) {
+            
+            // Get an array of keys from keyArray
+            var keys = [];
+            for (var k in keyArray) {
+                if (keyArray.hasOwnProperty(k)) {
+                    keys.push(k);
+                }
+            }
+            
+            // Compare the key from the file and the keyArray. Append the value if it matches.
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
                 if (key == parts[0] && parts[1] != '') {
                     keyArray[key].push(parts[1]);
                     break;
@@ -785,7 +793,17 @@ ActiveProject.prototype.readTxtFile = function(file, keyArray) {
 //Write content to text file. Automatically creates a text file if it doesnt exist.
 ActiveProject.prototype.writeTxtFile = function(file, keyArray) {
     if (file.open("w")) {
-        for (key in keyArray) {
+        // Get an array of keys from keyArray
+        var keys = [];
+        for (var k in keyArray) {
+            if (keyArray.hasOwnProperty(k)) {
+                keys.push(k);
+            }
+        }
+        
+        // Use a traditional for loop to iterate over the keys
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
             file.writeln(key + ":" + keyArray[key]);
         }
         file.close();
